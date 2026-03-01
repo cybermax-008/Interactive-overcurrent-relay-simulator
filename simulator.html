@@ -1021,45 +1021,140 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 document.getElementById('exportBtn').addEventListener('click', exportPDF);
 
 function exportPDF() {
-  // 1. Redraw chart in B&W for print
-  drawChartBW();
-
-  // 2. Update print-visible labels and params
-  relays.forEach((r, i) => {
-    const pl = document.getElementById('printLabel' + i);
-    const pp = document.getElementById('printParams' + i);
-    if (pl) pl.textContent = r.label || 'R' + (i + 1);
-    if (pp) pp.textContent = `CT Primary: ${r.ctPri} A  |  Pickup Mul: ${r.pickupMul.toFixed(2)}  |  TMS: ${r.tms.toFixed(2)}  |  Side: ${r.side === 'pri' ? 'Primary' : 'Secondary'}`;
-  });
-
-  // 3. Update print stamp
   const now = new Date();
-  document.getElementById('printStamp').textContent =
-    `Created: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}  |  t = 0.14 / ((I_fault/I_set)^0.02 − 1) × TMS`;
+  const active = relays.map((r, i) => ({ r, i })).filter(x => x.r.enabled);
+  const priFault100 = getPriFault100();
+  const secFault100 = getSecFault100();
+  const priFault = getPriFault();
+  const secFault = getSecFault();
+  const pcts = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
-  // 4. Trigger native print
-  window.print();
+  // Render B&W chart on a high-res offscreen canvas
+  const chartImg = renderBWChart(2400, 1500);
 
-  // 5. Restore colour chart after print
-  setTimeout(() => drawChart(), 500);
+  // B&W dash descriptions
+  const BW_DASH_NAMES = ['Solid ———', 'Dashed – – –', 'Dotted · · · ·', 'Dash-dot –·–·'];
+
+  // Relay settings rows
+  const settingsRows = active.map(({ r, i }) => {
+    const iset = getIset(r);
+    const If = getRelayFault(i);
+    const t = tripTime(If, iset, r.tms);
+    const tStr = isFinite(t) && t > 0 ? t.toFixed(3) + ' s' : 'No trip';
+    const ratio = iset > 0 ? (If / iset).toFixed(2) + 'x' : '—';
+    return `<tr>
+      <td style="font-weight:700">${r.label || 'R' + (i+1)}</td>
+      <td>${BW_DASH_NAMES[i] || 'Solid'}</td>
+      <td>${r.side === 'pri' ? 'Primary' : 'Secondary'}</td>
+      <td>${r.ctPri}</td>
+      <td>${r.pickupMul.toFixed(2)}</td>
+      <td>${iset.toFixed(1)}</td>
+      <td>${r.tms.toFixed(2)}</td>
+      <td>${If.toFixed(1)}</td>
+      <td>${tStr}</td>
+      <td>${ratio}</td>
+    </tr>`;
+  }).join('');
+
+  // Fault % table rows
+  const faultRows = pcts.map(pct => {
+    const priF = priFault100 * (pct / 100);
+    const secF = secFault100 * (pct / 100);
+    const isCurrent = pct === faultPct;
+    const cells = active.map(({ r, i }) => {
+      const iset = getIset(r);
+      const If = r.side === 'pri' ? priF : secF;
+      const t = tripTime(If, iset, r.tms);
+      let val;
+      if (isFinite(t) && t > 0) val = t.toFixed(3) + 's @ ' + If.toFixed(0) + 'A';
+      else if (If <= iset) val = 'No trip @ ' + If.toFixed(0) + 'A';
+      else val = '∞';
+      return `<td>${val}</td>`;
+    }).join('');
+    return `<tr style="${isCurrent ? 'font-weight:700;background:#eee;' : ''}">
+      <td>${pct}%${isCurrent ? ' ◀' : ''}</td>${cells}</tr>`;
+  }).join('');
+
+  const faultThCells = active.map(({ r, i }) => `<th>${r.label || 'R' + (i+1)}</th>`).join('');
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<title>Inverse Time Overcurrent Relay — Multi-Curve</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @page { size: A4 landscape; margin: 10mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; font-size: 10px; line-height: 1.4; padding: 16px; }
+  h1 { font-size: 16px; margin-bottom: 2px; }
+  .sub { color: #555; font-size: 9px; margin-bottom: 10px; }
+  h2 { font-size: 11px; margin: 10px 0 4px; border-bottom: 1.5px solid #333; padding-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .params { font-size: 10px; margin-bottom: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 9px; margin-bottom: 8px; }
+  th, td { border: 1px solid #aaa; padding: 4px 7px; text-align: left; }
+  th { background: #f0f0f0; font-weight: 700; }
+  .chart-img { width: 100%; margin: 6px 0; }
+  .formula { font-size: 8px; color: #666; text-align: right; margin-top: 6px; }
+  @media print {
+    body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+  <h1>⚡ Inverse Time Overcurrent Relay — Multi-Curve</h1>
+  <div class="sub">IEC 60255 Standard Inverse &nbsp;|&nbsp; Created: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
+
+  <h2>Transformer Parameters</h2>
+  <div class="params">
+    MVA: <b>${tx.mva}</b> &nbsp;|&nbsp;
+    Primary: <b>${tx.priKV} kV</b> &nbsp;|&nbsp;
+    Secondary: <b>${tx.secKV} kV</b> &nbsp;|&nbsp;
+    Z: <b>${tx.zPct}%</b> &nbsp;|&nbsp;
+    Fault Level: <b>${faultPct}%</b>
+  </div>
+  <div class="params">
+    Primary I<sub>fault</sub>: <b>${priFault.toFixed(1)} A</b> (100%: ${priFault100.toFixed(1)} A) &nbsp;|&nbsp;
+    Secondary I<sub>fault</sub>: <b>${secFault.toFixed(1)} A</b> (100%: ${secFault100.toFixed(1)} A)
+  </div>
+
+  <h2>Relay Settings</h2>
+  <table>
+    <thead><tr>
+      <th>Relay</th><th>Line Style</th><th>Side</th><th>CT Pri (A)</th><th>Pickup Mul</th>
+      <th>I<sub>set</sub> (A)</th><th>TMS</th><th>I<sub>fault</sub> (A)</th><th>Trip Time</th><th>Multiple</th>
+    </tr></thead>
+    <tbody>${settingsRows}</tbody>
+  </table>
+
+  <h2>Trip Time Curves</h2>
+  <img class="chart-img" src="${chartImg}" />
+
+  <h2>Trip Time by Fault Level</h2>
+  <table>
+    <thead><tr><th>Fault %</th>${faultThCells}</tr></thead>
+    <tbody>${faultRows}</tbody>
+  </table>
+
+  <div class="formula">t = 0.14 / ((I<sub>fault</sub> / I<sub>set</sub>)<sup>0.02</sup> − 1) × TMS</div>
+
+  <script>setTimeout(() => { window.print(); }, 400);<\/script>
+</body>
+</html>`);
+  printWin.document.close();
 }
 
-function drawChartBW() {
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx2d.scale(dpr, dpr);
-  const W = rect.width, H = rect.height;
-  const c = ctx2d;
+// Render high-res B&W chart to offscreen canvas, return data URL
+function renderBWChart(W, H) {
+  const bwc = document.createElement('canvas');
+  bwc.width = W; bwc.height = H;
+  const c = bwc.getContext('2d');
 
-  const pad = { top: 28, right: 40, bottom: 52, left: 68 };
+  c.fillStyle = '#fff';
+  c.fillRect(0, 0, W, H);
+
+  const pad = { top: 50, right: 80, bottom: 80, left: 100 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
-
-  // White background
-  c.fillStyle = '#ffffff';
-  c.fillRect(0, 0, W, H);
 
   // Auto-fit ranges (same as drawChart)
   let dxMin = Infinity, dxMax = 0, dyMin = Infinity, dyMax = 0;
@@ -1109,34 +1204,34 @@ function drawChartBW() {
   const xTicks = logTicks(xMin, xMax);
   const yTicks = logTicks(yMin, yMax);
 
-  // Grid — light grey
-  c.strokeStyle = '#ddd'; c.lineWidth = 1;
+  // Grid
+  c.strokeStyle = '#ddd'; c.lineWidth = 1.5;
   xTicks.forEach(v => { c.beginPath(); c.moveTo(mapX(v), pad.top); c.lineTo(mapX(v), pad.top + ch); c.stroke(); });
   yTicks.forEach(v => { c.beginPath(); c.moveTo(pad.left, mapY(v)); c.lineTo(pad.left + cw, mapY(v)); c.stroke(); });
 
   // Border
-  c.strokeStyle = '#666'; c.lineWidth = 1.5;
+  c.strokeStyle = '#666'; c.lineWidth = 2.5;
   c.strokeRect(pad.left, pad.top, cw, ch);
 
   // Axis labels
-  c.fillStyle = '#333'; c.font = '10px JetBrains Mono'; c.textAlign = 'center';
+  c.fillStyle = '#333'; c.font = '24px sans-serif'; c.textAlign = 'center';
   xTicks.forEach(v => {
     let label = v >= 1000 ? (v / 1000) + 'k' : v >= 1 ? v.toFixed(0) : v.toString();
-    c.fillText(label, mapX(v), pad.top + ch + 18);
+    c.fillText(label, mapX(v), pad.top + ch + 35);
   });
   c.textAlign = 'right';
   yTicks.forEach(v => {
     let label = v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(0) : v >= 0.1 ? v.toFixed(1) : v.toFixed(2);
-    c.fillText(label, pad.left - 8, mapY(v) + 4);
+    c.fillText(label, pad.left - 14, mapY(v) + 8);
   });
 
-  c.fillStyle = '#000'; c.font = '11px DM Sans'; c.textAlign = 'center';
-  c.fillText('Fault Current — I_fault (A)', pad.left + cw / 2, H - 6);
-  c.save(); c.translate(14, pad.top + ch / 2); c.rotate(-Math.PI / 2);
+  c.fillStyle = '#000'; c.font = '26px sans-serif'; c.textAlign = 'center';
+  c.fillText('Fault Current — I_fault (A)', pad.left + cw / 2, H - 16);
+  c.save(); c.translate(28, pad.top + ch / 2); c.rotate(-Math.PI / 2);
   c.fillText('Trip Time (seconds)', 0, 0); c.restore();
 
-  // B&W dash patterns per relay
-  const BW_DASH = [[], [12, 5], [4, 4], [14, 4, 3, 4]];
+  // B&W dash patterns for high-res
+  const BW_DASH = [[], [20, 10], [8, 8], [24, 8, 6, 8]];
 
   // Draw curves
   relays.forEach((r, i) => {
@@ -1145,7 +1240,7 @@ function drawChartBW() {
     if (iset <= 0) return;
 
     c.strokeStyle = '#000';
-    c.lineWidth = 2.5;
+    c.lineWidth = 4;
     c.setLineDash(BW_DASH[i] || []);
     c.beginPath();
     let first = true;
@@ -1163,10 +1258,10 @@ function drawChartBW() {
     const li = Math.pow(10, labelLogX);
     const lt = tripTime(li, iset, r.tms);
     if (isFinite(lt) && lt >= yMin && lt <= yMax) {
-      c.fillStyle = '#000'; c.font = 'bold 10px JetBrains Mono'; c.textAlign = 'left';
+      c.fillStyle = '#000'; c.font = 'bold 24px sans-serif'; c.textAlign = 'left';
       const label = r.label || `R${i + 1}`;
       const short = label.length > 16 ? label.slice(0, 15) + '…' : label;
-      c.fillText(short, mapX(li) + 5, mapY(lt) - 8);
+      c.fillText(short, mapX(li) + 10, mapY(lt) - 14);
     }
   });
 
@@ -1186,11 +1281,11 @@ function drawChartBW() {
 
   faultLines.forEach(fl => {
     const fx = mapX(fl.val);
-    c.strokeStyle = '#888'; c.lineWidth = 1; c.setLineDash([6, 4]);
+    c.strokeStyle = '#888'; c.lineWidth = 2; c.setLineDash([10, 6]);
     c.beginPath(); c.moveTo(fx, pad.top); c.lineTo(fx, pad.top + ch); c.stroke();
     c.setLineDash([]);
-    c.fillStyle = '#333'; c.font = 'bold 10px JetBrains Mono'; c.textAlign = 'center';
-    c.fillText(`${fl.label}: ${fl.val.toFixed(0)}A`, fx, pad.top - 8);
+    c.fillStyle = '#333'; c.font = 'bold 22px sans-serif'; c.textAlign = 'center';
+    c.fillText(`${fl.label}: ${fl.val.toFixed(0)}A`, fx, pad.top - 14);
 
     fl.relays.forEach(ri => {
       const r = relays[ri];
@@ -1199,19 +1294,21 @@ function drawChartBW() {
       if (!isFinite(t) || t <= 0 || t < yMin || t > yMax) return;
       const py = mapY(t);
 
-      c.strokeStyle = '#666'; c.lineWidth = 1; c.setLineDash([3, 3]);
+      c.strokeStyle = '#666'; c.lineWidth = 1.5; c.setLineDash([5, 5]);
       c.beginPath(); c.moveTo(pad.left, py); c.lineTo(fx, py); c.stroke();
       c.setLineDash([]);
 
       c.fillStyle = '#000';
-      c.beginPath(); c.arc(fx, py, 5, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(fx, py, 9, 0, Math.PI * 2); c.fill();
       c.fillStyle = '#fff';
-      c.beginPath(); c.arc(fx, py, 2.5, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(fx, py, 4.5, 0, Math.PI * 2); c.fill();
 
-      c.fillStyle = '#000'; c.font = 'bold 10px JetBrains Mono'; c.textAlign = 'left';
-      c.fillText(t.toFixed(2) + 's', fx + 12, py + 4);
+      c.fillStyle = '#000'; c.font = 'bold 22px sans-serif'; c.textAlign = 'left';
+      c.fillText(t.toFixed(2) + 's', fx + 18, py + 7);
     });
   });
+
+  return bwc.toDataURL('image/png', 1.0);
 }
 
 function refresh() {
