@@ -224,6 +224,27 @@
   }
   .export-btn:hover { background: rgba(139,92,246,0.2); }
 
+  .remarks-card {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 12px 14px;
+    border-left: 3px solid #64748b;
+  }
+  .remarks-label {
+    display: block; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 600; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .remarks-input {
+    width: 100%; padding: 8px 10px;
+    background: var(--bg); border: 1px solid var(--panel-border);
+    border-radius: 6px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
+    outline: none; resize: vertical; min-height: 60px;
+    line-height: 1.5; transition: border-color 0.2s;
+  }
+  .remarks-input:focus { border-color: var(--accent); }
+  .remarks-input::placeholder { color: var(--text-dim); opacity: 0.5; }
+
   /* ---- Chart ---- */
   .chart-panel {
     background: var(--panel); border: 1px solid var(--panel-border);
@@ -452,6 +473,12 @@
       <!-- Relay Cards -->
       <div id="cardsContainer"></div>
 
+      <!-- Remarks -->
+      <div class="remarks-card">
+        <label class="remarks-label">📝 Remarks / Notes</label>
+        <textarea id="remarksField" class="remarks-input" placeholder="Add notes here... (visible in export)" rows="3"></textarea>
+      </div>
+
       <!-- Reset -->
       <div style="display:flex;gap:8px;">
         <div class="reset-btn" id="resetBtn" style="flex:1;">↺ Reset All to Defaults</div>
@@ -506,7 +533,8 @@ const STORAGE_KEY = 'idmt_relay_sim_v2';
 
 function saveState() {
   try {
-    const state = { tx, faultPct, relays };
+    const remarks = document.getElementById('remarksField').value;
+    const state = { tx, faultPct, relays, remarks };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) { /* silently fail */ }
 }
@@ -524,6 +552,11 @@ function loadState() {
         if (!r.label) r.label = DEFAULTS.relays[i].label;
         if (!r.side) r.side = DEFAULTS.relays[i].side;
       });
+      // Restore remarks
+      setTimeout(() => {
+        const rf = document.getElementById('remarksField');
+        if (rf && s.remarks) rf.value = s.remarks;
+      }, 0);
       return true;
     }
   } catch (e) { /* silently fail */ }
@@ -1012,9 +1045,15 @@ document.getElementById('faultPctSlider').addEventListener('input', e => {
   refresh();
 });
 
+// Remarks auto-save
+document.getElementById('remarksField').addEventListener('input', () => saveState());
+
 // Reset button
 document.getElementById('resetBtn').addEventListener('click', () => {
-  if (confirm('Reset all values to defaults?')) resetToDefaults();
+  if (confirm('Reset all values to defaults?')) {
+    document.getElementById('remarksField').value = '';
+    resetToDefaults();
+  }
 });
 
 // Export PDF
@@ -1028,6 +1067,7 @@ function exportPDF() {
   const priFault = getPriFault();
   const secFault = getSecFault();
   const pcts = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  const remarks = document.getElementById('remarksField').value.trim();
 
   // Render B&W chart on a high-res offscreen canvas
   const chartImg = renderBWChart(2400, 1500);
@@ -1095,6 +1135,7 @@ function exportPDF() {
   th { background: #f0f0f0; font-weight: 700; }
   .chart-img { width: 100%; margin: 6px 0; }
   .formula { font-size: 8px; color: #666; text-align: right; margin-top: 6px; }
+  .remarks { font-size: 10px; line-height: 1.5; padding: 6px 0; border-left: 3px solid #999; padding-left: 10px; margin: 4px 0; color: #333; white-space: pre-wrap; }
   @media print {
     body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
@@ -1134,6 +1175,8 @@ function exportPDF() {
     <thead><tr><th>Fault %</th>${faultThCells}</tr></thead>
     <tbody>${faultRows}</tbody>
   </table>
+
+  ${remarks ? `<h2>Remarks</h2><div class="remarks">${remarks.replace(/\n/g, '<br>')}</div>` : ''}
 
   <div class="formula">t = 0.14 / ((I<sub>fault</sub> / I<sub>set</sub>)<sup>0.02</sup> − 1) × TMS</div>
 
