@@ -952,12 +952,12 @@ function exportPDF() {
   // --- Header ---
   p.fillStyle = '#1a1a2e';
   p.font = 'bold 16px sans-serif';
-  p.fillText('Inverse Time Overcurrent Relay — Coordination Study', M, M + 14);
+  p.fillText('Inverse Time Overcurrent Relay — Multi-Curve', M, M + 14);
 
   p.fillStyle = '#666';
   p.font = '9px sans-serif';
   const now = new Date();
-  p.fillText(`IEC 60255 Standard Inverse  |  Generated: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, M, M + 30);
+  p.fillText(`IEC 60255 Standard Inverse  |  Created: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, M, M + 30);
 
   // --- Transformer Info ---
   let y = M + 50;
@@ -1110,7 +1110,6 @@ function exportPDF() {
   // --- Footer ---
   p.fillStyle = '#aaa';
   p.font = '7px sans-serif';
-  p.fillText('IDMT Relay Coordination Study — IEC 60255 Standard Inverse', M, PH - 10);
   p.textAlign = 'right';
   p.fillText('t = 0.14 / ((I_fault/I_set)^0.02 - 1) × TMS', PW - M, PH - 10);
   p.textAlign = 'left';
@@ -1124,7 +1123,7 @@ function exportPDF() {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>IDMT Relay Coordination Study</title>
+      <title>Inverse Time Overcurrent Relay — Multi-Curve</title>
       <style>
         * { margin: 0; padding: 0; }
         @page { size: A4 landscape; margin: 0; }
