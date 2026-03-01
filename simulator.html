@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inverse Time Overcurrent Relay — Multi-Curve Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --panel: #111827;
+    --panel-border: #1e293b;
+    --accent: #f59e0b;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --grid: rgba(148, 163, 184, 0.06);
+    --c1: #f59e0b;
+    --c2: #3b82f6;
+    --c3: #10b981;
+    --c4: #f43f5e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  .noise {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 1540px; margin: 0 auto; padding: 18px 24px;
+  }
+
+  header {
+    text-align: center; margin-bottom: 12px;
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem; font-weight: 600;
+    color: var(--accent); letter-spacing: -0.5px;
+  }
+
+  header p { color: var(--text-dim); font-size: 0.78rem; margin-top: 2px; }
+
+  .formula-bar {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 10px 20px; text-align: center;
+    margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem; color: var(--text); line-height: 2.2;
+  }
+
+  .formula-bar .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; }
+  .formula-bar .frac .num { border-bottom: 2px solid var(--accent); padding: 0 6px 3px; }
+  .formula-bar .frac .den { padding: 3px 6px 0; }
+  .formula-bar .var { color: var(--accent); font-weight: 600; }
+  .formula-bar .cst { color: #10b981; }
+  .formula-bar .info { display: block; font-size: 0.68rem; color: var(--text-dim); margin-top: 2px; line-height: 1.5; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ---- Controls ---- */
+  .controls-panel { display: flex; flex-direction: column; gap: 8px; }
+
+  .tx-card {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 14px 16px;
+    border-left: 3px solid #8b5cf6;
+  }
+
+  .tx-card .tx-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.76rem; font-weight: 600; color: #8b5cf6;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+  }
+
+  .tx-fields { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px 8px; }
+
+  .tx-results {
+    margin-top: 8px; padding: 8px 10px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; color: var(--text-dim);
+    display: flex; flex-wrap: wrap; gap: 4px 16px;
+  }
+
+  .tx-results .tx-val { color: #c4b5fd; font-weight: 600; font-size: 0.78rem; }
+  .tx-results .tx-label { white-space: nowrap; }
+
+  .relay-card {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 12px 14px;
+    border-left: 3px solid var(--c1);
+    transition: opacity 0.2s;
+  }
+  .relay-card[data-idx="1"] { border-left-color: var(--c2); }
+  .relay-card[data-idx="2"] { border-left-color: var(--c3); }
+  .relay-card[data-idx="3"] { border-left-color: var(--c4); }
+  .relay-card.disabled { opacity: 0.25; }
+
+  .card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; gap: 6px;
+  }
+
+  .card-header .title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  [data-idx="0"] .title { color: var(--c1); }
+  [data-idx="1"] .title { color: var(--c2); }
+  [data-idx="2"] .title { color: var(--c3); }
+  [data-idx="3"] .title { color: var(--c4); }
+
+  .label-input {
+    flex: 1; min-width: 0;
+    padding: 3px 7px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 500;
+    outline: none; transition: border-color 0.2s;
+    text-align: center;
+  }
+  .label-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.07); }
+
+  .toggle-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .toggle-wrap > span { font-size: 0.63rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+
+  .toggle { position: relative; width: 34px; height: 18px; cursor: pointer; display: inline-block; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .sl {
+    position: absolute; inset: 0;
+    background: var(--panel-border); border-radius: 9px; transition: background 0.2s;
+  }
+  .toggle .sl::before {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; left: 2px; top: 2px;
+    background: var(--text-dim); border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .toggle input:checked + .sl { background: rgba(245,158,11,0.4); }
+  .toggle input:checked + .sl::before { transform: translateX(16px); background: var(--accent); }
+
+  .card-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 8px; }
+
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.57rem; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .num-input {
+    width: 100%; padding: 6px 6px;
+    background: var(--bg); border: 1px solid var(--panel-border);
+    border-radius: 5px; color: var(--text);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .num-input:focus { border-color: var(--accent); }
+
+  .calc-row {
+    margin-top: 6px; padding: 5px 8px;
+    background: rgba(255,255,255,0.03); border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+    color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 3px 10px;
+    align-items: center;
+  }
+  .calc-row .computed { color: var(--accent); font-weight: 600; font-size: 0.73rem; }
+
+  .card-result {
+    margin-top: 4px; padding: 5px 8px;
+    background: rgba(255,255,255,0.02); border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    color: var(--text-dim); display: flex; justify-content: space-between;
+  }
+  .card-result .tv { font-weight: 700; color: var(--text); font-size: 0.8rem; }
+
+  /* Reset button */
+  .reset-btn {
+    margin-top: 4px; padding: 8px 12px;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 8px; color: #ef4444; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    text-align: center; transition: background 0.2s;
+  }
+  .reset-btn:hover { background: rgba(239,68,68,0.2); }
+
+  .export-btn {
+    margin-top: 4px; padding: 8px 12px;
+    background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 8px; color: #c4b5fd; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    text-align: center; transition: background 0.2s;
+  }
+  .export-btn:hover { background: rgba(139,92,246,0.2); }
+
+  /* ---- Chart ---- */
+  .chart-panel {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 12px; padding: 18px; position: relative;
+    display: flex; flex-direction: column;
+    align-self: start;
+  }
+
+  .chart-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+  }
+
+  .chart-top h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem; font-weight: 500;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .chart-legend {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  }
+
+  .leg-item { display: flex; align-items: center; gap: 5px; color: var(--text-dim); }
+  .leg-dot { width: 12px; height: 3px; border-radius: 2px; }
+
+  .fault-summary {
+    margin-top: 4px; margin-bottom: 6px; padding: 6px 10px;
+    background: rgba(139, 92, 246, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    color: var(--text-dim); display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .fault-summary .fv { color: #c4b5fd; font-weight: 600; }
+
+  .canvas-wrap { position: relative; width: 100%; aspect-ratio: 16 / 10; }
+
+  canvas { width: 100%; height: 100%; border-radius: 8px; background: var(--bg); }
+
+  .tooltip {
+    position: absolute; pointer-events: none;
+    background: rgba(17,24,39,0.95); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    color: var(--text); display: none; z-index: 10;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5); line-height: 1.7;
+    max-width: 320px;
+  }
+
+  .results-table { margin-top: 12px; max-height: 320px; overflow-y: auto; }
+
+  .results-table table {
+    width: 100%; border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.63rem;
+  }
+
+  .results-table th {
+    text-align: left; padding: 5px 6px; color: var(--text-dim);
+    border-bottom: 1px solid var(--panel-border);
+    text-transform: uppercase; letter-spacing: 0.3px;
+    position: sticky; top: 0; background: var(--panel); font-weight: 500;
+  }
+
+  .results-table td { padding: 4px 6px; border-bottom: 1px solid var(--grid); }
+
+  .results-table::-webkit-scrollbar { width: 4px; }
+  .results-table::-webkit-scrollbar-track { background: transparent; }
+  .results-table::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 2px; }
+
+  #faultPctSlider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px;
+    background: #8b5cf6; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 12px rgba(139,92,246,0.5);
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app">
+  <header>
+    <h1>⚡ Inverse Time Overcurrent Relay — Multi-Curve</h1>
+    <p>IEC 60255 Standard Inverse · Transformer Fault Current Derivation</p>
+  </header>
+
+  <div class="formula-bar">
+    t = <span class="frac">
+      <span class="num"><span class="cst">0.14</span></span>
+      <span class="den">( <span class="var">I<sub>fault</sub></span> / <span class="var">I<sub>set</sub></span> )<sup><span class="cst">0.02</span></sup> − 1</span>
+    </span>
+    &nbsp;× <span class="var">TMS</span>
+    <span class="info">
+      I<sub>set</sub> = CT Primary × Pickup Multiplier &nbsp;|&nbsp;
+      I<sub>fault</sub> = <span class="frac" style="font-size:0.68rem;">
+        <span class="num">MVA × 1000</span>
+        <span class="den">kV × √3 × Z%/100</span>
+      </span>
+    </span>
+  </div>
+
+  <div class="layout">
+    <div class="controls-panel">
+      <!-- Transformer Parameters -->
+      <div class="tx-card">
+        <div class="tx-title">🔌 Transformer Parameters</div>
+        <div class="tx-fields">
+          <div class="field">
+            <label>MVA</label>
+            <input type="number" class="num-input" id="txMVA" value="10" min="0.1" max="1000" step="0.1">
+          </div>
+          <div class="field">
+            <label>Primary kV</label>
+            <input type="number" class="num-input" id="txPriKV" value="33" min="0.1" max="500" step="0.1">
+          </div>
+          <div class="field">
+            <label>Secondary kV</label>
+            <input type="number" class="num-input" id="txSecKV" value="11" min="0.1" max="500" step="0.1">
+          </div>
+          <div class="field">
+            <label>Z %</label>
+            <input type="number" class="num-input" id="txZ" value="8" min="0.1" max="100" step="0.1">
+          </div>
+        </div>
+        <div class="tx-results">
+          <span class="tx-label">Primary I<sub>fault</sub> (100%):</span>
+          <span class="tx-val" id="txPriFault100">—</span>
+          <span class="tx-label">Secondary I<sub>fault</sub> (100%):</span>
+          <span class="tx-val" id="txSecFault100">—</span>
+        </div>
+        <div style="margin-top:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;">Fault Level Multiplier</label>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:#c4b5fd;" id="faultPctDisplay">100%</span>
+          </div>
+          <input type="range" id="faultPctSlider" min="0" max="100" step="1" value="100" style="-webkit-appearance:none;width:100%;height:6px;background:var(--panel-border);border-radius:3px;outline:none;cursor:pointer;">
+          <div class="tx-results" style="margin-top:8px;">
+            <span class="tx-label">Applied Primary I<sub>fault</sub>:</span>
+            <span class="tx-val" id="txPriFault">—</span>
+            <span class="tx-label">Applied Secondary I<sub>fault</sub>:</span>
+            <span class="tx-val" id="txSecFault">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Relay Cards -->
+      <div id="cardsContainer"></div>
+
+      <!-- Reset -->
+      <div style="display:flex;gap:8px;">
+        <div class="reset-btn" id="resetBtn" style="flex:1;">↺ Reset All to Defaults</div>
+        <div class="export-btn" id="exportBtn" style="flex:1;">📄 Export as PDF</div>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-top">
+        <h2>Trip Time vs Fault Current (Log-Log)</h2>
+        <div class="chart-legend" id="legend"></div>
+      </div>
+      <div class="fault-summary">
+        <span>Primary I<sub>fault</sub>: <span class="fv" id="fsPri">—</span></span>
+        <span>Secondary I<sub>fault</sub>: <span class="fv" id="fsSec">—</span></span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="chart"></canvas>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="results-table">
+        <table>
+          <thead id="tableHead"><tr><th>Fault %</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#f43f5e'];
+const SIDES = ['pri', 'pri', 'sec', 'sec'];
+
+const DEFAULTS = {
+  tx: { mva: 10, priKV: 33, secKV: 11, zPct: 8 },
+  faultPct: 100,
+  relays: [
+    { ctPri: 200, pickupMul: 0.50, tms: 0.50, enabled: true, label: 'Primary OC1', side: 'pri' },
+    { ctPri: 200, pickupMul: 0.80, tms: 0.30, enabled: true, label: 'Primary OC2', side: 'pri' },
+    { ctPri: 600, pickupMul: 0.50, tms: 0.20, enabled: true, label: 'Secondary OC1', side: 'sec' },
+    { ctPri: 600, pickupMul: 0.80, tms: 0.10, enabled: true, label: 'Secondary OC2', side: 'sec' },
+  ]
+};
+
+// State
+let tx, faultPct, relays;
+
+// ---- LocalStorage ----
+const STORAGE_KEY = 'idmt_relay_sim_v2';
+
+function saveState() {
+  try {
+    const state = { tx, faultPct, relays };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) { /* silently fail */ }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      tx = s.tx || JSON.parse(JSON.stringify(DEFAULTS.tx));
+      faultPct = typeof s.faultPct === 'number' ? s.faultPct : DEFAULTS.faultPct;
+      relays = s.relays || JSON.parse(JSON.stringify(DEFAULTS.relays));
+      // Ensure all relay fields exist (migration)
+      relays.forEach((r, i) => {
+        if (!r.label) r.label = DEFAULTS.relays[i].label;
+        if (!r.side) r.side = DEFAULTS.relays[i].side;
+      });
+      return true;
+    }
+  } catch (e) { /* silently fail */ }
+  return false;
+}
+
+function resetToDefaults() {
+  tx = JSON.parse(JSON.stringify(DEFAULTS.tx));
+  faultPct = DEFAULTS.faultPct;
+  relays = JSON.parse(JSON.stringify(DEFAULTS.relays));
+  localStorage.removeItem(STORAGE_KEY);
+  // Re-populate inputs
+  populateTxInputs();
+  buildCards();
+  refresh();
+}
+
+function populateTxInputs() {
+  document.getElementById('txMVA').value = tx.mva;
+  document.getElementById('txPriKV').value = tx.priKV;
+  document.getElementById('txSecKV').value = tx.secKV;
+  document.getElementById('txZ').value = tx.zPct;
+  document.getElementById('faultPctSlider').value = faultPct;
+}
+
+// ---- Init state ----
+if (!loadState()) {
+  tx = JSON.parse(JSON.stringify(DEFAULTS.tx));
+  faultPct = DEFAULTS.faultPct;
+  relays = JSON.parse(JSON.stringify(DEFAULTS.relays));
+}
+
+const canvas = document.getElementById('chart');
+const ctx2d = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+function calcFaultCurrent(mva, kv, zPct) {
+  if (kv <= 0 || zPct <= 0) return 0;
+  return (mva * 1000) / (kv * Math.sqrt(3) * (zPct / 100));
+}
+
+function getPriFault100() { return calcFaultCurrent(tx.mva, tx.priKV, tx.zPct); }
+function getSecFault100() { return calcFaultCurrent(tx.mva, tx.secKV, tx.zPct); }
+function getPriFault() { return getPriFault100() * (faultPct / 100); }
+function getSecFault() { return getSecFault100() * (faultPct / 100); }
+
+function getRelayFault(i) {
+  return relays[i].side === 'pri' ? getPriFault() : getSecFault();
+}
+
+function getIset(r) { return r.ctPri * r.pickupMul; }
+
+function tripTime(If, iset, tms) {
+  const ratio = If / iset;
+  if (ratio <= 1) return Infinity;
+  return (0.14 / (Math.pow(ratio, 0.02) - 1)) * tms;
+}
+
+// Build relay cards
+function buildCards() {
+  const container = document.getElementById('cardsContainer');
+  container.innerHTML = relays.map((r, i) => `
+    <div class="relay-card ${r.enabled ? '' : 'disabled'}" data-idx="${i}" id="rc${i}" style="margin-bottom:8px;">
+      <div class="card-header">
+        <span class="title">R${i + 1}</span>
+        <input type="text" class="label-input" data-relay="${i}" data-param="label" value="${r.label}" placeholder="Label..." maxlength="30">
+        <div class="toggle-wrap">
+          <span>ON</span>
+          <label class="toggle">
+            <input type="checkbox" ${r.enabled ? 'checked' : ''} data-relay="${i}">
+            <span class="sl"></span>
+          </label>
+        </div>
+      </div>
+      <div class="card-fields">
+        <div class="field">
+          <label>CT Primary (A)</label>
+          <input type="number" class="num-input" data-relay="${i}" data-param="ctPri" value="${r.ctPri}" min="1" max="50000" step="1">
+        </div>
+        <div class="field">
+          <label>Pickup Mul (0–2)</label>
+          <input type="number" class="num-input" data-relay="${i}" data-param="pickupMul" value="${r.pickupMul.toFixed(2)}" min="0" max="2" step="0.01">
+        </div>
+        <div class="field">
+          <label>TMS (0.10–1.00)</label>
+          <input type="number" class="num-input" data-relay="${i}" data-param="tms" value="${r.tms.toFixed(2)}" min="0.10" max="1.00" step="0.01">
+        </div>
+      </div>
+      <div class="calc-row" id="calcRow${i}"></div>
+      <div class="card-result">
+        <span>Trip Time:</span>
+        <span class="tv" id="tr${i}">—</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Wire events
+  container.querySelectorAll('.toggle input').forEach(t => {
+    t.addEventListener('change', e => {
+      relays[parseInt(e.target.dataset.relay)].enabled = e.target.checked;
+      refresh();
+    });
+  });
+
+  container.querySelectorAll('[data-param]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const idx = parseInt(e.target.dataset.relay);
+      const p = e.target.dataset.param;
+      if (p === 'label') {
+        relays[idx].label = e.target.value;
+        refresh();
+        return;
+      }
+      const val = parseFloat(e.target.value);
+      if (isNaN(val)) return;
+      if (p === 'ctPri') relays[idx].ctPri = val;
+      if (p === 'pickupMul') relays[idx].pickupMul = Math.max(0, Math.min(2, val));
+      if (p === 'tms') relays[idx].tms = val;
+      refresh();
+    });
+  });
+}
+
+function buildLegend() {
+  document.getElementById('legend').innerHTML = relays.map((r, i) => {
+    const iset = getIset(r);
+    const name = r.label || `R${i + 1}`;
+    return `<span class="leg-item" style="opacity:${r.enabled ? 1 : 0.3}">
+      <span class="leg-dot" style="background:${COLORS[i]}"></span>
+      ${name}
+    </span>`;
+  }).join('');
+}
+
+function updateTxDisplay() {
+  const priFault100 = getPriFault100();
+  const secFault100 = getSecFault100();
+  const priFault = getPriFault();
+  const secFault = getSecFault();
+  document.getElementById('txPriFault100').textContent = priFault100.toFixed(1) + ' A';
+  document.getElementById('txSecFault100').textContent = secFault100.toFixed(1) + ' A';
+  document.getElementById('txPriFault').textContent = priFault.toFixed(1) + ' A';
+  document.getElementById('txSecFault').textContent = secFault.toFixed(1) + ' A';
+  document.getElementById('fsPri').textContent = priFault.toFixed(1) + ' A (' + faultPct + '%)';
+  document.getElementById('fsSec').textContent = secFault.toFixed(1) + ' A (' + faultPct + '%)';
+  document.getElementById('faultPctDisplay').textContent = faultPct + '%';
+}
+
+function updateResults() {
+  relays.forEach((r, i) => {
+    const card = document.getElementById('rc' + i);
+    card.classList.toggle('disabled', !r.enabled);
+
+    const iset = getIset(r);
+    const If = getRelayFault(i);
+    const calcRow = document.getElementById('calcRow' + i);
+    const trEl = document.getElementById('tr' + i);
+
+    calcRow.innerHTML = `
+      <span>I<sub>set</sub> = ${r.ctPri} × ${r.pickupMul.toFixed(2)} = <span class="computed">${iset.toFixed(1)} A</span></span>
+      <span>I<sub>fault</sub> (${r.side === 'pri' ? 'Pri' : 'Sec'}) = <span class="computed">${If.toFixed(1)} A</span></span>
+    `;
+
+    if (!r.enabled) { trEl.textContent = 'OFF'; return; }
+    if (iset <= 0) { trEl.textContent = 'No pickup'; return; }
+
+    const t = tripTime(If, iset, r.tms);
+    const ratio = If / iset;
+
+    if (isFinite(t) && t > 0) {
+      trEl.textContent = t.toFixed(3) + ' s  (' + ratio.toFixed(2) + 'x)';
+    } else {
+      trEl.textContent = If <= iset ? 'No trip (' + ratio.toFixed(2) + 'x)' : '∞';
+    }
+  });
+}
+
+function updateTable() {
+  const thead = document.getElementById('tableHead');
+  const tbody = document.getElementById('tableBody');
+  const priFault100 = getPriFault100();
+  const secFault100 = getSecFault100();
+  const pcts = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+
+  // Only include enabled relays
+  const active = relays.map((r, i) => ({ r, i })).filter(x => x.r.enabled);
+
+  if (active.length === 0) {
+    thead.innerHTML = '<tr><th>Fault %</th></tr>';
+    tbody.innerHTML = '<tr><td style="color:var(--text-dim)">No relays enabled</td></tr>';
+    return;
+  }
+
+  // Build header
+  const headerCells = active.map(({ r, i }) => {
+    const name = r.label || `R${i + 1}`;
+    return `<th style="color:${COLORS[i]}">${name}</th>`;
+  }).join('');
+  thead.innerHTML = `<tr><th>Fault %</th>${headerCells}</tr>`;
+
+  // Build rows
+  const currentPct = faultPct;
+
+  tbody.innerHTML = pcts.map(pct => {
+    const priFault = priFault100 * (pct / 100);
+    const secFault = secFault100 * (pct / 100);
+    const isCurrent = pct === currentPct;
+
+    const cells = active.map(({ r, i }) => {
+      const iset = getIset(r);
+      if (iset <= 0) return `<td style="color:var(--text-dim)">—</td>`;
+      const If = r.side === 'pri' ? priFault : secFault;
+      const t = tripTime(If, iset, r.tms);
+      let display;
+      if (isFinite(t) && t > 0) {
+        display = `${t.toFixed(3)}s @ ${If.toFixed(0)}A`;
+      } else if (If <= iset) {
+        display = `No trip @ ${If.toFixed(0)}A`;
+      } else {
+        display = '∞';
+      }
+      return `<td style="color:${COLORS[i]};${isCurrent ? 'font-weight:700;' : ''}font-size:0.6rem;">${display}</td>`;
+    }).join('');
+
+    return `<tr style="${isCurrent ? 'background:rgba(139,92,246,0.1)' : ''}">
+      <td style="white-space:nowrap;${isCurrent ? 'color:#c4b5fd;font-weight:700' : ''}">${pct}%${isCurrent ? ' ◀' : ''}</td>${cells}</tr>`;
+  }).join('');
+}
+
+function drawChart() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx2d.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  const c = ctx2d;
+
+  const pad = { top: 28, right: 40, bottom: 52, left: 68 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+
+  c.clearRect(0, 0, W, H);
+
+  // Auto-fit axis ranges to accommodate all active curves and operating points
+  let dataXMin = Infinity, dataXMax = 0, dataYMin = Infinity, dataYMax = 0;
+
+  relays.forEach((r, i) => {
+    if (!r.enabled) return;
+    const iset = getIset(r);
+    if (iset <= 0) return;
+    const If = getRelayFault(i);
+
+    // Curve starts just above iset
+    if (iset * 1.01 < dataXMin) dataXMin = iset * 1.01;
+
+    // Check operating point
+    if (If > 0) {
+      if (If > dataXMax) dataXMax = If;
+      const t = tripTime(If, iset, r.tms);
+      if (isFinite(t) && t > 0) {
+        if (t < dataYMin) dataYMin = t;
+        if (t > dataYMax) dataYMax = t;
+      }
+    }
+
+    // Sample some points along the curve for Y range
+    for (let m = 1.5; m <= 30; m *= 1.5) {
+      const I = iset * m;
+      if (I > dataXMax) dataXMax = I;
+      const t = tripTime(I, iset, r.tms);
+      if (isFinite(t) && t > 0) {
+        if (t < dataYMin) dataYMin = t;
+        if (t > dataYMax) dataYMax = t;
+      }
+    }
+  });
+
+  // Fallback defaults if no active curves
+  if (!isFinite(dataXMin) || dataXMin <= 0) dataXMin = 50;
+  if (!isFinite(dataXMax) || dataXMax <= 0) dataXMax = 25000;
+  if (!isFinite(dataYMin) || dataYMin <= 0) dataYMin = 0.1;
+  if (!isFinite(dataYMax) || dataYMax <= 0) dataYMax = 100;
+
+  // Add padding (in log space) so curves don't touch edges
+  const logPadX = 0.15, logPadY = 0.25;
+  const xMinLog = Math.log10(dataXMin) - logPadX;
+  const xMaxLog = Math.log10(dataXMax) + logPadX;
+  const yMinLog = Math.log10(dataYMin) - logPadY;
+  const yMaxLog = Math.log10(dataYMax) + logPadY;
+
+  const xMin = Math.pow(10, xMinLog);
+  const xMax = Math.pow(10, xMaxLog);
+  const yMin = Math.pow(10, yMinLog);
+  const yMax = Math.pow(10, yMaxLog);
+
+  const lx = v => Math.log10(v);
+  const ly = v => Math.log10(v);
+  const mapX = v => pad.left + ((lx(v) - lx(xMin)) / (lx(xMax) - lx(xMin))) * cw;
+  const mapY = v => pad.top + ch - ((ly(v) - ly(yMin)) / (ly(yMax) - ly(yMin))) * ch;
+
+  // Generate log-scale ticks dynamically
+  function logTicks(min, max) {
+    const ticks = [];
+    const steps = [1, 2, 5];
+    const startExp = Math.floor(Math.log10(min));
+    const endExp = Math.ceil(Math.log10(max));
+    for (let exp = startExp; exp <= endExp; exp++) {
+      for (const s of steps) {
+        const val = s * Math.pow(10, exp);
+        if (val >= min * 0.9 && val <= max * 1.1) ticks.push(val);
+      }
+    }
+    return ticks;
+  }
+
+  const xTicks = logTicks(xMin, xMax);
+  const yTicks = logTicks(yMin, yMax);
+
+  c.strokeStyle = 'rgba(148,163,184,0.07)'; c.lineWidth = 1;
+  xTicks.forEach(v => { c.beginPath(); c.moveTo(mapX(v), pad.top); c.lineTo(mapX(v), pad.top + ch); c.stroke(); });
+  yTicks.forEach(v => { c.beginPath(); c.moveTo(pad.left, mapY(v)); c.lineTo(pad.left + cw, mapY(v)); c.stroke(); });
+
+  c.strokeStyle = 'rgba(148,163,184,0.15)';
+  c.strokeRect(pad.left, pad.top, cw, ch);
+
+  c.fillStyle = '#64748b'; c.font = '10px JetBrains Mono'; c.textAlign = 'center';
+  xTicks.forEach(v => {
+    let label;
+    if (v >= 1000) label = (v / 1000) + 'k';
+    else if (v >= 1) label = v.toFixed(0);
+    else label = v.toString();
+    c.fillText(label, mapX(v), pad.top + ch + 18);
+  });
+  c.textAlign = 'right';
+  yTicks.forEach(v => {
+    let label;
+    if (v >= 100) label = v.toFixed(0);
+    else if (v >= 1) label = v.toFixed(0);
+    else if (v >= 0.1) label = v.toFixed(1);
+    else label = v.toFixed(2);
+    c.fillText(label, pad.left - 8, mapY(v) + 4);
+  });
+
+  c.fillStyle = '#94a3b8'; c.font = '11px DM Sans'; c.textAlign = 'center';
+  c.fillText('Fault Current — I_fault (A)', pad.left + cw / 2, H - 6);
+  c.save(); c.translate(14, pad.top + ch / 2); c.rotate(-Math.PI / 2);
+  c.fillText('Trip Time (seconds)', 0, 0); c.restore();
+
+  // Draw curves
+  relays.forEach((r, i) => {
+    if (!r.enabled) return;
+    const iset = getIset(r);
+    if (iset <= 0) return;
+
+    c.strokeStyle = COLORS[i];
+    c.lineWidth = 2.5;
+    c.shadowColor = COLORS[i] + '40';
+    c.shadowBlur = 6;
+    c.beginPath();
+    let first = true;
+    for (let I = iset * 1.01; I <= xMax; I *= 1.008) {
+      const t = tripTime(I, iset, r.tms);
+      if (!isFinite(t) || t <= 0 || t < yMin || t > yMax || I < xMin) continue;
+      const x = mapX(I), y = mapY(t);
+      if (first) { c.moveTo(x, y); first = false; } else c.lineTo(x, y);
+    }
+    c.stroke();
+    c.shadowBlur = 0;
+
+    // Curve label — use relay label, position at 80% of visible x range
+    const labelLogX = Math.log10(xMin) + 0.8 * (Math.log10(xMax) - Math.log10(xMin));
+    const li = Math.pow(10, labelLogX);
+    const lt = tripTime(li, iset, r.tms);
+    if (isFinite(lt) && lt >= yMin && lt <= yMax) {
+      c.fillStyle = COLORS[i]; c.font = 'bold 10px JetBrains Mono'; c.textAlign = 'left';
+      const label = r.label || `R${i + 1}`;
+      // Truncate long labels on chart
+      const shortLabel = label.length > 16 ? label.slice(0, 15) + '…' : label;
+      c.fillText(shortLabel, mapX(li) + 5, mapY(lt) - 8);
+    }
+  });
+
+  // Fault current vertical lines
+  const priFault = getPriFault();
+  const secFault = getSecFault();
+
+  const faultLines = [];
+  if (priFault > xMin && priFault <= xMax) {
+    const priRelays = relays.map((r, i) => r.side === 'pri' ? i : -1).filter(x => x >= 0);
+    faultLines.push({ val: priFault, label: 'PRI', color: '#c4b5fd', relays: priRelays });
+  }
+  if (secFault > xMin && secFault <= xMax) {
+    const secRelays = relays.map((r, i) => r.side === 'sec' ? i : -1).filter(x => x >= 0);
+    faultLines.push({ val: secFault, label: 'SEC', color: '#f9a8d4', relays: secRelays });
+  }
+
+  faultLines.forEach(fl => {
+    const fx = mapX(fl.val);
+
+    c.strokeStyle = fl.color + '50'; c.lineWidth = 1.5; c.setLineDash([6, 4]);
+    c.beginPath(); c.moveTo(fx, pad.top); c.lineTo(fx, pad.top + ch); c.stroke();
+    c.setLineDash([]);
+
+    c.fillStyle = fl.color; c.font = 'bold 10px JetBrains Mono'; c.textAlign = 'center';
+    c.fillText(`${fl.label}: ${fl.val.toFixed(0)}A`, fx, pad.top - 8);
+
+    fl.relays.forEach(ri => {
+      const r = relays[ri];
+      if (!r.enabled) return;
+      const iset = getIset(r);
+      if (iset <= 0) return;
+      const t = tripTime(fl.val, iset, r.tms);
+      if (!isFinite(t) || t <= 0 || t < yMin || t > yMax) return;
+      const py = mapY(t);
+
+      c.strokeStyle = COLORS[ri] + '40'; c.lineWidth = 1; c.setLineDash([3, 3]);
+      c.beginPath(); c.moveTo(pad.left, py); c.lineTo(fx, py); c.stroke();
+      c.setLineDash([]);
+
+      c.beginPath(); c.arc(fx, py, 8, 0, Math.PI * 2);
+      c.fillStyle = COLORS[ri] + '30'; c.fill();
+      c.strokeStyle = COLORS[ri]; c.lineWidth = 2; c.stroke();
+
+      c.beginPath(); c.arc(fx, py, 3.5, 0, Math.PI * 2);
+      c.fillStyle = COLORS[ri]; c.fill();
+
+      c.fillStyle = COLORS[ri]; c.font = 'bold 10px JetBrains Mono'; c.textAlign = 'left';
+      c.fillText(t.toFixed(2) + 's', fx + 14, py + 4);
+    });
+  });
+
+  canvas._cp = { pad, cw, ch, xMin, xMax, yMin, yMax, mapX, mapY };
+}
+
+// Tooltip
+canvas.addEventListener('mousemove', e => {
+  const p = canvas._cp; if (!p) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const rx = (mx - p.pad.left) / p.cw;
+  if (rx < 0 || rx > 1 || my < p.pad.top || my > p.pad.top + p.ch) { tooltip.style.display = 'none'; return; }
+
+  const hI = Math.pow(10, Math.log10(p.xMin) + rx * (Math.log10(p.xMax) - Math.log10(p.xMin)));
+  let lines = [`<b style="color:var(--accent)">I<sub>fault</sub> = ${Math.round(hI).toLocaleString()} A</b>`];
+  relays.forEach((r, i) => {
+    if (!r.enabled) return;
+    const iset = getIset(r);
+    if (iset <= 0) return;
+    const t = tripTime(hI, iset, r.tms);
+    const ratio = hI / iset;
+    const name = r.label || `R${i + 1}`;
+    if (isFinite(t) && t > 0) {
+      lines.push(`<span style="color:${COLORS[i]}">${name}: ${t.toFixed(3)}s (${ratio.toFixed(1)}x)</span>`);
+    } else if (hI <= iset) {
+      lines.push(`<span style="color:${COLORS[i]}">${name}: Below pickup</span>`);
+    }
+  });
+  tooltip.innerHTML = lines.join('<br>');
+  tooltip.style.display = 'block';
+  tooltip.style.left = Math.min(mx + 15, rect.width - 260) + 'px';
+  tooltip.style.top = (my - 10) + 'px';
+});
+canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+// Transformer input events
+['txMVA', 'txPriKV', 'txSecKV', 'txZ'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    if (isNaN(v) || v <= 0) return;
+    if (id === 'txMVA') tx.mva = v;
+    if (id === 'txPriKV') tx.priKV = v;
+    if (id === 'txSecKV') tx.secKV = v;
+    if (id === 'txZ') tx.zPct = v;
+    refresh();
+  });
+});
+
+// Fault % multiplier slider
+document.getElementById('faultPctSlider').addEventListener('input', e => {
+  faultPct = parseInt(e.target.value);
+  refresh();
+});
+
+// Reset button
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Reset all values to defaults?')) resetToDefaults();
+});
+
+// Export PDF
+document.getElementById('exportBtn').addEventListener('click', exportPDF);
+
+function exportPDF() {
+  const PW = 842; // A4 landscape width in points
+  const PH = 595; // A4 landscape height
+  const M = 36;   // margin
+
+  const pc = document.createElement('canvas');
+  pc.width = PW * 2; pc.height = PH * 2;
+  const p = pc.getContext('2d');
+  p.scale(2, 2);
+
+  // Background
+  p.fillStyle = '#ffffff';
+  p.fillRect(0, 0, PW, PH);
+
+  // --- Header ---
+  p.fillStyle = '#1a1a2e';
+  p.font = 'bold 16px sans-serif';
+  p.fillText('Inverse Time Overcurrent Relay — Coordination Study', M, M + 14);
+
+  p.fillStyle = '#666';
+  p.font = '9px sans-serif';
+  const now = new Date();
+  p.fillText(`IEC 60255 Standard Inverse  |  Generated: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, M, M + 30);
+
+  // --- Transformer Info ---
+  let y = M + 50;
+  p.fillStyle = '#1a1a2e';
+  p.font = 'bold 11px sans-serif';
+  p.fillText('Transformer Parameters', M, y);
+  y += 16;
+  p.fillStyle = '#333';
+  p.font = '10px sans-serif';
+  const priFault100 = getPriFault100();
+  const secFault100 = getSecFault100();
+  const priFault = getPriFault();
+  const secFault = getSecFault();
+  p.fillText(`MVA: ${tx.mva}  |  Primary: ${tx.priKV} kV  |  Secondary: ${tx.secKV} kV  |  Z: ${tx.zPct}%  |  Fault Level: ${faultPct}%`, M, y);
+  y += 14;
+  p.fillText(`Primary I_fault: ${priFault.toFixed(1)} A (100%: ${priFault100.toFixed(1)} A)  |  Secondary I_fault: ${secFault.toFixed(1)} A (100%: ${secFault100.toFixed(1)} A)`, M, y);
+
+  // --- Relay Settings Table ---
+  y += 24;
+  p.fillStyle = '#1a1a2e';
+  p.font = 'bold 11px sans-serif';
+  p.fillText('Relay Settings', M, y);
+  y += 6;
+
+  const active = relays.map((r, i) => ({ r, i })).filter(x => x.r.enabled);
+  const colW = Math.min(160, (PW - 2 * M) / (active.length + 1));
+  const rowH = 16;
+
+  // Header row
+  y += rowH;
+  p.fillStyle = '#f0f0f5';
+  p.fillRect(M, y - 12, (active.length + 1) * colW, rowH);
+  p.fillStyle = '#666';
+  p.font = 'bold 9px sans-serif';
+  p.fillText('Parameter', M + 4, y);
+  active.forEach((a, ci) => {
+    p.fillStyle = COLORS[a.i];
+    p.fillText(a.r.label || `R${a.i + 1}`, M + (ci + 1) * colW + 4, y);
+  });
+
+  // Data rows
+  const params = [
+    { label: 'Side', fn: r => r.side === 'pri' ? 'Primary' : 'Secondary' },
+    { label: 'CT Primary', fn: r => r.ctPri + ' A' },
+    { label: 'Pickup Mul', fn: r => r.pickupMul.toFixed(2) },
+    { label: 'I_set', fn: (r) => getIset(r).toFixed(1) + ' A' },
+    { label: 'TMS', fn: r => r.tms.toFixed(2) },
+    { label: 'I_fault', fn: (r, i) => getRelayFault(i).toFixed(1) + ' A' },
+    { label: 'Trip Time', fn: (r, i) => {
+      const t = tripTime(getRelayFault(i), getIset(r), r.tms);
+      return isFinite(t) && t > 0 ? t.toFixed(3) + ' s' : 'No trip';
+    }},
+    { label: 'Pickup Multiple', fn: (r, i) => {
+      const ratio = getRelayFault(i) / getIset(r);
+      return ratio.toFixed(2) + 'x';
+    }},
+  ];
+
+  params.forEach((pm, ri) => {
+    y += rowH;
+    if (ri % 2 === 0) {
+      p.fillStyle = '#f8f8fc';
+      p.fillRect(M, y - 12, (active.length + 1) * colW, rowH);
+    }
+    p.fillStyle = '#333';
+    p.font = '9px sans-serif';
+    p.fillText(pm.label, M + 4, y);
+    active.forEach((a, ci) => {
+      p.fillStyle = '#1a1a2e';
+      p.fillText(pm.fn(a.r, a.i), M + (ci + 1) * colW + 4, y);
+    });
+  });
+
+  // --- Chart ---
+  y += 28;
+  const chartX = M;
+  const chartW = PW / 2 - M - 10;
+  const chartH = PH - y - M;
+
+  if (chartH > 80) {
+    // Copy chart canvas image
+    p.fillStyle = '#1a1a2e';
+    p.font = 'bold 11px sans-serif';
+    p.fillText('Trip Time vs Fault Current', chartX, y);
+    y += 8;
+    
+    // Draw chart image from the live canvas
+    const chartCanvas = document.getElementById('chart');
+    p.drawImage(chartCanvas, chartX, y, chartW, chartH);
+
+    // --- Fault % Table on the right ---
+    const tableX = PW / 2 + 10;
+    let ty = y - 8;
+    p.fillStyle = '#1a1a2e';
+    p.font = 'bold 11px sans-serif';
+    p.fillText('Trip Time by Fault Level', tableX, ty);
+    ty += 6;
+
+    const pcts = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+    const tColW = Math.min(110, (PW - tableX - M) / (active.length + 1));
+    const tRowH = 15;
+
+    // Table header
+    ty += tRowH;
+    p.fillStyle = '#f0f0f5';
+    p.fillRect(tableX, ty - 11, (active.length + 1) * tColW, tRowH);
+    p.fillStyle = '#666';
+    p.font = 'bold 8px sans-serif';
+    p.fillText('Fault %', tableX + 3, ty);
+    active.forEach((a, ci) => {
+      p.fillStyle = COLORS[a.i];
+      const name = (a.r.label || `R${a.i+1}`);
+      p.fillText(name.length > 12 ? name.slice(0, 11) + '…' : name, tableX + (ci + 1) * tColW + 3, ty);
+    });
+
+    // Table rows
+    pcts.forEach((pct, ri) => {
+      ty += tRowH;
+      const priF = priFault100 * (pct / 100);
+      const secF = secFault100 * (pct / 100);
+      const isCurrent = pct === faultPct;
+
+      if (isCurrent) {
+        p.fillStyle = '#e8e0ff';
+        p.fillRect(tableX, ty - 11, (active.length + 1) * tColW, tRowH);
+      } else if (ri % 2 === 0) {
+        p.fillStyle = '#f8f8fc';
+        p.fillRect(tableX, ty - 11, (active.length + 1) * tColW, tRowH);
+      }
+
+      p.fillStyle = isCurrent ? '#5b21b6' : '#333';
+      p.font = isCurrent ? 'bold 8px sans-serif' : '8px sans-serif';
+      p.fillText(pct + '%' + (isCurrent ? ' ◀' : ''), tableX + 3, ty);
+
+      active.forEach((a, ci) => {
+        const If = a.r.side === 'pri' ? priF : secF;
+        const iset = getIset(a.r);
+        const t = tripTime(If, iset, a.r.tms);
+        let val;
+        if (isFinite(t) && t > 0) val = t.toFixed(3) + 's @ ' + If.toFixed(0) + 'A';
+        else if (If <= iset) val = 'No trip';
+        else val = '∞';
+        p.fillStyle = '#1a1a2e';
+        p.font = '7.5px sans-serif';
+        p.fillText(val, tableX + (ci + 1) * tColW + 3, ty);
+      });
+    });
+  }
+
+  // --- Footer ---
+  p.fillStyle = '#aaa';
+  p.font = '7px sans-serif';
+  p.fillText('IDMT Relay Coordination Study — IEC 60255 Standard Inverse', M, PH - 10);
+  p.textAlign = 'right';
+  p.fillText('t = 0.14 / ((I_fault/I_set)^0.02 - 1) × TMS', PW - M, PH - 10);
+  p.textAlign = 'left';
+
+  // Convert to PDF via print-ready image
+  // Using a data URL approach that opens a printable window
+  const imgData = pc.toDataURL('image/png', 1.0);
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>IDMT Relay Coordination Study</title>
+      <style>
+        * { margin: 0; padding: 0; }
+        @page { size: A4 landscape; margin: 0; }
+        body { display: flex; justify-content: center; align-items: flex-start; }
+        img { width: 100vw; height: auto; }
+        @media print {
+          img { width: 100%; height: auto; page-break-after: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      <img src="${imgData}" />
+      <script>
+        setTimeout(() => { window.print(); }, 400);
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWin.document.close();
+}
+
+function refresh() {
+  updateTxDisplay();
+  buildLegend();
+  updateResults();
+  updateTable();
+  drawChart();
+  saveState();
+}
+
+window.addEventListener('resize', () => drawChart());
+
+// Init
+populateTxInputs();
+buildCards();
+refresh();
+</script>
+</body>
+</html>
