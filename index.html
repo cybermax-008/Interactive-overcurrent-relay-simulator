@@ -1,11 +1,121 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="refresh" content="0; url=simulator.html" />
-  <title>Interactive Overcurrent Relay Simulator</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inverse Time Overcurrent Relay — Multi-Curve Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <p>Redirecting to simulator...</p>
+<div class="noise"></div>
+<div class="app">
+  <header>
+    <h1>⚡ Inverse Time Overcurrent Relay — Multi-Curve</h1>
+    <p>IEC 60255 Standard Inverse · Transformer Fault Current Derivation</p>
+  </header>
+
+  <div class="formula-bar">
+    t = <span class="frac">
+      <span class="num"><span class="cst">0.14</span></span>
+      <span class="den">( <span class="var">I<sub>fault</sub></span> / <span class="var">I<sub>set</sub></span> )<sup><span class="cst">0.02</span></sup> − 1</span>
+    </span>
+    &nbsp;× <span class="var">TMS</span>
+    <span class="info">
+      I<sub>set</sub> = CT Primary × Pickup Multiplier &nbsp;|&nbsp;
+      I<sub>fault</sub> = <span class="frac" style="font-size:0.68rem;">
+        <span class="num">MVA × 1000</span>
+        <span class="den">kV × √3 × Z%/100</span>
+      </span>
+    </span>
+  </div>
+
+  <div class="layout">
+    <div class="controls-panel">
+      <!-- Transformer Parameters -->
+      <div class="tx-card">
+        <div class="tx-title">🔌 Transformer Parameters</div>
+        <div class="tx-fields">
+          <div class="field">
+            <label>MVA</label>
+            <input type="number" class="num-input" id="txMVA" value="10" min="0.1" max="1000" step="0.1">
+          </div>
+          <div class="field">
+            <label>Primary kV</label>
+            <input type="number" class="num-input" id="txPriKV" value="33" min="0.1" max="500" step="0.1">
+          </div>
+          <div class="field">
+            <label>Secondary kV</label>
+            <input type="number" class="num-input" id="txSecKV" value="11" min="0.1" max="500" step="0.1">
+          </div>
+          <div class="field">
+            <label>Z %</label>
+            <input type="number" class="num-input" id="txZ" value="8" min="0.1" max="100" step="0.1">
+          </div>
+        </div>
+        <div class="tx-results">
+          <span class="tx-label">Primary I<sub>fault</sub> (100%):</span>
+          <span class="tx-val" id="txPriFault100">—</span>
+          <span class="tx-label">Secondary I<sub>fault</sub> (100%):</span>
+          <span class="tx-val" id="txSecFault100">—</span>
+        </div>
+        <div id="kvWarning" style="display:none;margin-top:6px;padding:6px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#f59e0b;">
+          ⚠ Primary kV &le; Secondary kV — verify transformer parameters
+        </div>
+        <div style="margin-top:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <label style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;">Fault Level Multiplier</label>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:#c4b5fd;" id="faultPctDisplay">100%</span>
+          </div>
+          <input type="range" id="faultPctSlider" min="5" max="100" step="1" value="100" style="-webkit-appearance:none;width:100%;height:6px;background:var(--panel-border);border-radius:3px;outline:none;cursor:pointer;">
+          <div class="tx-results" style="margin-top:8px;">
+            <span class="tx-label">Applied Primary I<sub>fault</sub>:</span>
+            <span class="tx-val" id="txPriFault">—</span>
+            <span class="tx-label">Applied Secondary I<sub>fault</sub>:</span>
+            <span class="tx-val" id="txSecFault">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Relay Cards -->
+      <div id="cardsContainer"></div>
+
+      <!-- Remarks -->
+      <div class="remarks-card">
+        <label class="remarks-label">📝 Remarks / Notes</label>
+        <textarea id="remarksField" class="remarks-input" placeholder="Add notes here... (visible in export)" rows="3"></textarea>
+      </div>
+
+      <!-- Reset -->
+      <div style="display:flex;gap:8px;">
+        <div class="reset-btn" id="resetBtn" style="flex:1;">↺ Reset All to Defaults</div>
+        <div class="export-btn" id="exportBtn" style="flex:1;">📄 Export as PDF</div>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-top">
+        <h2>Trip Time vs Fault Current (Log-Log)</h2>
+        <div class="chart-legend" id="legend"></div>
+      </div>
+      <div class="fault-summary">
+        <span>Primary I<sub>fault</sub>: <span class="fv" id="fsPri">—</span></span>
+        <span>Secondary I<sub>fault</sub>: <span class="fv" id="fsSec">—</span></span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="chart"></canvas>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="results-table">
+        <table>
+          <thead id="tableHead"><tr><th>Fault %</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="print-stamp" id="printStamp"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,25 @@
+{
+  "name": "interactive-overcurrent-relay-simulator",
+  "version": "1.0.0",
+  "description": "Interactive overcurrent relay simulator — IEC 60255 IDMT curves",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cybermax-008/Interactive-overcurrent-relay-simulator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cybermax-008/Interactive-overcurrent-relay-simulator/issues"
+  },
+  "homepage": "https://github.com/cybermax-008/Interactive-overcurrent-relay-simulator#readme",
+  "devDependencies": {
+    "vite": "^8.0.2"
+  }
+}

@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Redirect old simulator.html to new entry point
+[[redirects]]
+  from = "/simulator.html"
+  to = "/"
+  status = 301
