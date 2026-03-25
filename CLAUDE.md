@@ -92,4 +92,4 @@ Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multipli
 
 ### Current capabilities
 
-Single-page simulator with: 4 configurable relays (pri/sec) with per-relay IEC/IEEE curve selection, transformer parameter derivation, fault level slider (5-100%), live log-log chart with tooltips (mouse + touch), results table at 10% intervals, custom labels, remarks field, PDF export with B&W chart, localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators.
+Single-page PWA simulator with: 4 configurable relays (pri/sec) with per-relay IEC/IEEE curve selection (7 curve types), transformer parameter derivation, fault level slider (5-100%), live log-log chart with tooltips (mouse + touch), results table at 10% intervals, custom labels, remarks field, PDF export with B&W chart, localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators, offline support via service worker, installable PWA.

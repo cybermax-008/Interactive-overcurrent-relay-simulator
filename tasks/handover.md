@@ -63,11 +63,22 @@
 - **Formula bar:** Updated to show generic `t = (k / (M^alpha - 1) + beta) * TMS` with IEC/IEEE note
 - Build output: 23.7 KB JS + 13.5 KB CSS (8.1 KB + 3.2 KB gzipped)
 
+### Sprint 5 — PWA Conversion
+- **vite-plugin-pwa:** Auto-generates service worker (Workbox generateSW) with 13 precached entries
+- **Manifest:** name "IDMT Relay Simulator", standalone display, dark theme, app icons (192+512 PNG)
+- **Icons:** Lightning bolt SVG icon (amber on dark bg), generated PNGs via sharp
+- **Offline:** Full offline support — all assets cached, Google Fonts cached separately (1-year expiry)
+- **Install prompt:** Slide-up banner with Install/Dismiss buttons, dismissed state persisted in localStorage
+- **Meta tags:** description, theme-color, favicon.svg, apple-touch-icon
+
+### Bug fix — Chart not shrinking
+- **Root cause:** CSS grid item `.chart-panel` missing `min-width: 0` — prevented grid from shrinking the panel below its intrinsic content width
+- **Fix:** Added `min-width: 0` to `.chart-panel`, `min-width: 0; overflow: hidden` to `.canvas-wrap`, `display: block` to canvas, `overflow: auto` (both axes) to `.results-table`
+
 ## Next steps
-1. **Sprint 5 — PWA Conversion** (offline, installable)
-2. **Sprint 6 — Product Features** (6-8 relays, CTI display, URL sharing, study management)
-3. **Sprint 4.5 — Definite Time element** (optional high-set instantaneous per relay)
-4. Consider removing legacy `simulator.html` now that Vercel deploy is confirmed
+1. **Sprint 6 — Product Features** (6-8 relays, CTI display, URL sharing, study management)
+2. **Sprint 4.5 — Definite Time element** (optional high-set instantaneous per relay)
+3. Consider removing legacy `simulator.html` now that Vercel deploy is confirmed
 
 ## Gotchas / things to watch
 - `simulator.html` legacy file has Sprint 0+1 fixes but is NOT modular — will drift from `src/` modules. Safe to remove now.
@@ -75,3 +86,4 @@
 - `index.html` at root is the Vite entry point (not the old redirect)
 - `node_modules/` and `dist/` are gitignored — Vercel runs `npm install` + `npm run build`
 - IEEE curve constants should be cross-referenced with IEEE C37.112 standard for accuracy
+- PWA service worker auto-updates — users get new versions on next visit after deploy

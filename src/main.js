@@ -96,3 +96,52 @@ setupTooltip(canvas, tooltip, () => ({
   tx: state.tx,
   faultPct: state.faultPct
 }));
+
+// ---- PWA Install Prompt ----
+
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  // Don't show if user previously dismissed
+  if (localStorage.getItem('pwa-install-dismissed')) return;
+
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  // Don't duplicate
+  if (document.getElementById('pwa-install-banner')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'pwa-install-banner';
+  banner.className = 'pwa-install-banner';
+  banner.innerHTML = `
+    <span class="pwa-install-text">Install <strong>Relay Sim</strong> for offline use</span>
+    <button type="button" class="pwa-install-btn" id="pwaInstallBtn">Install</button>
+    <button type="button" class="pwa-dismiss-btn" id="pwaDismissBtn" aria-label="Dismiss install banner">&times;</button>
+  `;
+  document.body.appendChild(banner);
+
+  // Animate in
+  requestAnimationFrame(() => banner.classList.add('visible'));
+
+  document.getElementById('pwaInstallBtn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      banner.classList.remove('visible');
+      setTimeout(() => banner.remove(), 300);
+    }
+    deferredPrompt = null;
+  });
+
+  document.getElementById('pwaDismissBtn').addEventListener('click', () => {
+    localStorage.setItem('pwa-install-dismissed', '1');
+    banner.classList.remove('visible');
+    setTimeout(() => banner.remove(), 300);
+  });
+}
