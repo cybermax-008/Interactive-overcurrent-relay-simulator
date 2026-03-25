@@ -20,10 +20,10 @@ export const DEFAULTS = {
   tx: { mva: 10, priKV: 33, secKV: 11, zPct: 8 },
   faultPct: 100,
   relays: [
-    { ctPri: 200, pickupMul: 0.50, tms: 0.50, enabled: true, label: 'Primary OC1', side: 'pri' },
-    { ctPri: 200, pickupMul: 0.80, tms: 0.30, enabled: true, label: 'Primary OC2', side: 'pri' },
-    { ctPri: 600, pickupMul: 0.50, tms: 0.20, enabled: true, label: 'Secondary OC1', side: 'sec' },
-    { ctPri: 600, pickupMul: 0.80, tms: 0.10, enabled: true, label: 'Secondary OC2', side: 'sec' },
+    { ctPri: 200, pickupMul: 0.50, tms: 0.50, enabled: true, label: 'Primary OC1', side: 'pri', curveType: 'IEC_SI' },
+    { ctPri: 200, pickupMul: 0.80, tms: 0.30, enabled: true, label: 'Primary OC2', side: 'pri', curveType: 'IEC_SI' },
+    { ctPri: 600, pickupMul: 0.50, tms: 0.20, enabled: true, label: 'Secondary OC1', side: 'sec', curveType: 'IEC_SI' },
+    { ctPri: 600, pickupMul: 0.80, tms: 0.10, enabled: true, label: 'Secondary OC2', side: 'sec', curveType: 'IEC_SI' },
   ]
 };
 
@@ -31,10 +31,24 @@ export const DEFAULTS = {
 
 export const STORAGE_KEY = 'idmt_relay_sim_v2';
 
-// ---- IEC 60255 Standard Inverse curve constants ----
+// ---- IEC 60255 Standard Inverse curve constants (legacy, kept for reference) ----
 
 export const IEC_SI_K = 0.14;
 export const IEC_SI_ALPHA = 0.02;
+
+// ---- Curve type definitions ----
+// IEC 60255: t = (k / (M^alpha - 1)) * TMS
+// IEEE C37.112: t = (k / (M^alpha - 1) + beta) * TMS
+
+export const CURVES = {
+  IEC_SI:  { k: 0.14,   alpha: 0.02, beta: 0, label: 'IEC Standard Inverse',       short: 'SI',  standard: 'IEC 60255' },
+  IEC_VI:  { k: 13.5,   alpha: 1.0,  beta: 0, label: 'IEC Very Inverse',           short: 'VI',  standard: 'IEC 60255' },
+  IEC_EI:  { k: 80.0,   alpha: 2.0,  beta: 0, label: 'IEC Extremely Inverse',      short: 'EI',  standard: 'IEC 60255' },
+  IEC_LI:  { k: 120.0,  alpha: 1.0,  beta: 0, label: 'IEC Long Time Inverse',      short: 'LI',  standard: 'IEC 60255' },
+  IEEE_MI: { k: 0.0515, alpha: 0.02, beta: 0.114,  label: 'IEEE Moderately Inverse', short: 'MI', standard: 'IEEE C37.112' },
+  IEEE_VI: { k: 19.61,  alpha: 2.0,  beta: 0.491,  label: 'IEEE Very Inverse',       short: 'VI', standard: 'IEEE C37.112' },
+  IEEE_EI: { k: 28.2,   alpha: 2.0,  beta: 0.1217, label: 'IEEE Extremely Inverse',  short: 'EI', standard: 'IEEE C37.112' },
+};
 
 // ---- Chart rendering constants ----
 

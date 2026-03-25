@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Interactive overcurrent relay simulator implementing the **IEC 60255 Standard Inverse** time-current characteristic. Calculates trip times for up to 4 relays on a transformer's primary/secondary sides.
+Interactive overcurrent relay simulator supporting **IEC 60255** and **IEEE C37.112** IDMT curve types. Calculates trip times for up to 4 relays on a transformer's primary/secondary sides with per-relay curve selection.
 
-**Formula:** `t = (k / ((I_fault / I_set)^alpha - 1)) x TMS` where k=0.14, alpha=0.02 for Standard Inverse.
+**Formula:** `t = (k / ((I_fault / I_set)^alpha - 1) + beta) x TMS` — IEC curves have beta=0, IEEE curves have beta>0.
 
-**Deployed on:** Vercel (previously Netlify)
+**Supported curves:** IEC Standard Inverse, Very Inverse, Extremely Inverse, Long Time Inverse; IEEE Moderately Inverse, Very Inverse, Extremely Inverse.
+
+**Deployed on:** Vercel at https://power-system-tool.vercel.app/
 
 ## Commands
 
@@ -73,7 +75,7 @@ main.js       ← imports all, entry point
 
 ### Relay model
 
-Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multiplier, min 0.01), `tms` (time multiplier setting, 0.05-1.0), `enabled`, `label`. Relays 0-1 default to primary side, 2-3 to secondary.
+Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multiplier, min 0.01), `tms` (time multiplier setting, 0.05-1.0), `curveType` (key into `CURVES` object, e.g. `'IEC_SI'`, `'IEEE_VI'`), `enabled`, `label`. Relays 0-1 default to primary side, 2-3 to secondary.
 
 ### Key conventions
 
@@ -84,8 +86,10 @@ Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multipli
 - All user-provided strings (labels, remarks) are sanitized with `escapeHTML()` before innerHTML insertion
 - Fault current is derived from transformer params: `I_fault = (MVA x 1000) / (kV x sqrt(3) x Z%/100)`
 - `I_set = CT_Primary x Pickup_Multiplier`
-- Named constants in `constants.js` for all IEC values and chart parameters
+- Named constants in `constants.js` for all IEC/IEEE values and chart parameters
+- `CURVES` object in `constants.js` defines all curve types with `k`, `alpha`, `beta`, `label`, `short`, `standard`
+- `tripTime()` accepts an optional `curve` parameter (defaults to `CURVES.IEC_SI`)
 
 ### Current capabilities
 
-Single-page simulator with: 4 configurable relays (pri/sec), transformer parameter derivation, fault level slider (5-100%), live log-log chart with tooltips (mouse + touch), results table at 10% intervals, custom labels, remarks field, PDF export with B&W chart, localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates.
+Single-page simulator with: 4 configurable relays (pri/sec) with per-relay IEC/IEEE curve selection, transformer parameter derivation, fault level slider (5-100%), live log-log chart with tooltips (mouse + touch), results table at 10% intervals, custom labels, remarks field, PDF export with B&W chart, localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators.

@@ -1,4 +1,4 @@
-import { COLORS, escapeHTML } from './constants.js';
+import { COLORS, CURVES, escapeHTML } from './constants.js';
 import { getIset, tripTime } from './math.js';
 
 export function setupTooltip(canvas, tooltip, getState) {
@@ -20,7 +20,8 @@ export function setupTooltip(canvas, tooltip, getState) {
       if (!r.enabled) return;
       const iset = getIset(r);
       if (iset <= 0) return;
-      const t = tripTime(hI, iset, r.tms);
+      const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+      const t = tripTime(hI, iset, r.tms, curve);
       const ratio = hI / iset;
       const name = escapeHTML(r.label || `R${i + 1}`);
       if (isFinite(t) && t > 0) {
@@ -32,7 +33,7 @@ export function setupTooltip(canvas, tooltip, getState) {
     tooltip.innerHTML = lines.join('<br>');
     tooltip.style.display = 'block';
     tooltip.style.left = Math.min(mx + 15, rect.width - 260) + 'px';
-    tooltip.style.top = (my - 10) + 'px';
+    tooltip.style.top = Math.max(0, Math.min(my - 10, rect.height - tooltip.offsetHeight)) + 'px';
   }
 
   function onMouseLeave() {
@@ -40,6 +41,7 @@ export function setupTooltip(canvas, tooltip, getState) {
   }
 
   function onTouchMove(e) {
+    e.preventDefault();
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
@@ -52,7 +54,7 @@ export function setupTooltip(canvas, tooltip, getState) {
 
   canvas.addEventListener('mousemove', onMouseMove);
   canvas.addEventListener('mouseleave', onMouseLeave);
-  canvas.addEventListener('touchmove', onTouchMove);
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
   canvas.addEventListener('touchend', onTouchEnd);
 
   // Return cleanup function

@@ -25,32 +25,53 @@
 - **Debouncing:** 150ms on text/number inputs, 100ms on resize
 - **Named constants:** IEC_SI_K, IEC_SI_ALPHA, CURVE_SAMPLE_STEP, etc.
 
-### Sprint 3 — Architecture Split (Sprint 2 skipped)
+### Sprint 3 — Architecture Split (Sprint 2 was deferred)
 - Split `simulator.html` (1416 lines) into 9 ES modules + Vite build
 - Unified chart renderer: merged drawChart/renderBWChart into parameterized renderChart() with theme objects (~155 lines duplication eliminated)
 - Pure math module (zero DOM/state deps), clean acyclic module graph
 - Build output: 21.4 KB JS + 11.8 KB CSS (7.4 KB + 2.9 KB gzipped)
 - Legacy `simulator.html` preserved standalone
 
-### Deployment config
-- Added `vercel.json` for Vercel (build from dist/, redirect simulator.html → /)
-- `netlify.toml` also present as fallback
+### Deployment
+- Added `vercel.json` for Vercel (build from dist/, redirect simulator.html -> /)
+- Deployed to Vercel: https://power-system-tool.vercel.app/
+
+### Sprint 2 — Accessibility & Mobile
+- **Semantic HTML:** Converted `<div>` reset/export buttons to `<button type="button">` elements
+- **ARIA labels:** Canvas `role="img"`, slider `aria-label`, toggle `aria-label="Enable relay N"`, remarks `aria-label`, `for`/`id` pairs on all transformer and relay card inputs
+- **Focus indicators:** `:focus-visible` outlines on inputs, buttons, toggles, and slider
+- **Mobile breakpoints:** 540px (2-col grids, larger touch targets, bigger slider thumb) and 360px (1-col grids)
+- **Touch tooltip:** `passive: false` on touchmove with `preventDefault()`, vertical clamping
+- **Cross-browser slider:** Firefox `::-moz-range-thumb` and `::-moz-range-track` rules, inline styles moved to CSS
+- **CSS compatibility:** Replaced `inset: 0` with explicit `top/right/bottom/left`, added `aspect-ratio` fallback via `padding-bottom`
+- **Color contrast:** `--text-dim` changed from `#64748b` to `#8494a7` (~5.5:1 ratio), min label font-size bumped from 0.57rem to 0.65rem
+- Build output: 21.6 KB JS + 13.1 KB CSS (7.5 KB + 3.2 KB gzipped)
 
 ## Key decisions
 - **Vanilla JS + Vite** over React/Svelte — zero runtime overhead, preserves existing code
 - **Theme objects for chart** — screen vs print as config, not code duplication
-- **Sprint 2 skipped** — user chose architecture split first. Accessibility still on roadmap.
 - **Vercel** for deployment going forward
 
+### Sprint 4 — IEC/IEEE Curve Types
+- **CURVES object:** 7 curve types — IEC SI/VI/EI/LI + IEEE MI/VI/EI — with k, alpha, beta, label, short, standard fields
+- **Per-relay curve selector:** `<select>` dropdown with `<optgroup>` by standard (IEC 60255 / IEEE C37.112)
+- **Updated tripTime:** Accepts curve parameter, supports IEEE beta additive term: `t = (k / (M^alpha - 1) + beta) * TMS`
+- **curveType migration:** `loadState()` validates curveType exists in CURVES, falls back to IEC_SI
+- **All consumers updated:** chart.js, tooltip.js, export.js, ui.js all pass per-relay curve to tripTime
+- **Chart labels:** Show curve abbreviation `[SI]`, `[VI]`, etc. in curve labels, legend, and table headers
+- **PDF export:** Added Curve Type column to settings table, updated formula to generic form
+- **Formula bar:** Updated to show generic `t = (k / (M^alpha - 1) + beta) * TMS` with IEC/IEEE note
+- Build output: 23.7 KB JS + 13.5 KB CSS (8.1 KB + 3.2 KB gzipped)
+
 ## Next steps
-1. **Commit all changes** — significant uncommitted work
-2. **Deploy to Vercel** — push to GitHub, connect repo, verify build works
-3. **Sprint 2 — Accessibility & Mobile** (mobile breakpoints, touch, ARIA, semantic buttons)
-4. **Sprint 4 — IEC/IEEE Curve Types** (the #1 feature gap — architecture is now ready)
-5. **Sprint 5 — PWA Conversion**
+1. **Sprint 5 — PWA Conversion** (offline, installable)
+2. **Sprint 6 — Product Features** (6-8 relays, CTI display, URL sharing, study management)
+3. **Sprint 4.5 — Definite Time element** (optional high-set instantaneous per relay)
+4. Consider removing legacy `simulator.html` now that Vercel deploy is confirmed
 
 ## Gotchas / things to watch
-- `simulator.html` legacy file has Sprint 0+1 fixes but is NOT modular — will drift from `src/` modules. Consider removing once Vercel deploy is confirmed.
-- `chart.js` is the largest module (377 lines) — could be further decomposed later
+- `simulator.html` legacy file has Sprint 0+1 fixes but is NOT modular — will drift from `src/` modules. Safe to remove now.
+- `chart.js` is the largest module (~370 lines) — could be further decomposed later
 - `index.html` at root is the Vite entry point (not the old redirect)
 - `node_modules/` and `dist/` are gitignored — Vercel runs `npm install` + `npm run build`
+- IEEE curve constants should be cross-referenced with IEEE C37.112 standard for accuracy

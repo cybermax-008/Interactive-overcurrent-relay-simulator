@@ -1,4 +1,4 @@
-import { escapeHTML, BW_DASH_NAMES, EXPORT_CHART_W, EXPORT_CHART_H } from './constants.js';
+import { escapeHTML, CURVES, BW_DASH_NAMES, EXPORT_CHART_W, EXPORT_CHART_H } from './constants.js';
 import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault } from './math.js';
 import { renderBWChart } from './chart.js';
 
@@ -19,12 +19,14 @@ export function exportPDF(tx, faultPct, relays) {
   const settingsRows = active.map(({ r, i }) => {
     const iset = getIset(r);
     const If = getRelayFault(r, tx, faultPct);
-    const t = tripTime(If, iset, r.tms);
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+    const t = tripTime(If, iset, r.tms, curve);
     const tStr = isFinite(t) && t > 0 ? t.toFixed(3) + ' s' : 'No trip';
     const ratio = iset > 0 ? (If / iset).toFixed(2) + 'x' : '\u2014';
     return `<tr>
       <td style="font-weight:700">${escapeHTML(r.label || 'R' + (i+1))}</td>
       <td>${BW_DASH_NAMES[i] || 'Solid'}</td>
+      <td>${curve.label}</td>
       <td>${r.side === 'pri' ? 'Primary' : 'Secondary'}</td>
       <td>${r.ctPri}</td>
       <td>${r.pickupMul.toFixed(2)}</td>
@@ -44,7 +46,8 @@ export function exportPDF(tx, faultPct, relays) {
     const cells = active.map(({ r, i }) => {
       const iset = getIset(r);
       const If = r.side === 'pri' ? priF : secF;
-      const t = tripTime(If, iset, r.tms);
+      const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+      const t = tripTime(If, iset, r.tms, curve);
       let val;
       if (isFinite(t) && t > 0) val = t.toFixed(3) + 's @ ' + If.toFixed(0) + 'A';
       else if (If <= iset) val = 'No trip @ ' + If.toFixed(0) + 'A';
@@ -55,7 +58,10 @@ export function exportPDF(tx, faultPct, relays) {
       <td>${pct}%${isCurrent ? ' \u25c0' : ''}</td>${cells}</tr>`;
   }).join('');
 
-  const faultThCells = active.map(({ r, i }) => `<th>${escapeHTML(r.label || 'R' + (i+1))}</th>`).join('');
+  const faultThCells = active.map(({ r, i }) => {
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+    return `<th>${escapeHTML(r.label || 'R' + (i+1))} [${curve.short}]</th>`;
+  }).join('');
 
   const printWin = window.open('', '_blank');
   printWin.document.write(`<!DOCTYPE html>
@@ -83,7 +89,7 @@ export function exportPDF(tx, faultPct, relays) {
 </head>
 <body>
   <h1>\u26a1 Inverse Time Overcurrent Relay \u2014 Multi-Curve</h1>
-  <div class="sub">IEC 60255 Standard Inverse &nbsp;|&nbsp; Created: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
+  <div class="sub">IEC 60255 / IEEE C37.112 IDMT Curves &nbsp;|&nbsp; Created: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
 
   <h2>Transformer Parameters</h2>
   <div class="params">
@@ -101,7 +107,7 @@ export function exportPDF(tx, faultPct, relays) {
   <h2>Relay Settings</h2>
   <table>
     <thead><tr>
-      <th>Relay</th><th>Line Style</th><th>Side</th><th>CT Pri (A)</th><th>Pickup Mul</th>
+      <th>Relay</th><th>Line Style</th><th>Curve Type</th><th>Side</th><th>CT Pri (A)</th><th>Pickup Mul</th>
       <th>I<sub>set</sub> (A)</th><th>TMS</th><th>I<sub>fault</sub> (A)</th><th>Trip Time</th><th>Multiple</th>
     </tr></thead>
     <tbody>${settingsRows}</tbody>
@@ -118,7 +124,7 @@ export function exportPDF(tx, faultPct, relays) {
 
   ${remarks ? `<h2>Remarks</h2><div class="remarks">${escapeHTML(remarks).replace(/\n/g, '<br>')}</div>` : ''}
 
-  <div class="formula">t = 0.14 / ((I<sub>fault</sub> / I<sub>set</sub>)<sup>0.02</sup> \u2212 1) \u00d7 TMS</div>
+  <div class="formula">t = (k / ((I<sub>fault</sub> / I<sub>set</sub>)<sup>\u03b1</sup> \u2212 1) + \u03b2) \u00d7 TMS &nbsp;|\u00a0IEC: \u03b2=0 &nbsp;|\u00a0IEEE: \u03b2>0</div>
 
   <script>setTimeout(() => { window.print(); }, 400);<\/script>
 </body>

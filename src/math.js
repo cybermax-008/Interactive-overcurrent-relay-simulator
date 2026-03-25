@@ -1,14 +1,14 @@
-import { IEC_SI_K, IEC_SI_ALPHA } from './constants.js';
+import { CURVES } from './constants.js';
 
 export function calcFaultCurrent(mva, kv, zPct) {
   if (kv <= 0 || zPct <= 0) return 0;
   return (mva * 1000) / (kv * Math.sqrt(3) * (zPct / 100));
 }
 
-export function tripTime(If, iset, tms) {
+export function tripTime(If, iset, tms, curve = CURVES.IEC_SI) {
   const ratio = If / iset;
   if (ratio <= 1) return Infinity;
-  return (IEC_SI_K / (Math.pow(ratio, IEC_SI_ALPHA) - 1)) * tms;
+  return (curve.k / (Math.pow(ratio, curve.alpha) - 1) + (curve.beta || 0)) * tms;
 }
 
 export function getIset(r) {

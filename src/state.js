@@ -1,4 +1,4 @@
-import { DEFAULTS, STORAGE_KEY } from './constants.js';
+import { DEFAULTS, STORAGE_KEY, CURVES } from './constants.js';
 
 // Mutable shared state
 export const state = {
@@ -34,6 +34,7 @@ export function loadState() {
         if (r.pickupMul === undefined) r.pickupMul = d.pickupMul;
         if (r.tms === undefined) r.tms = d.tms;
         if (r.enabled === undefined) r.enabled = d.enabled;
+        if (r.curveType === undefined || !CURVES[r.curveType]) r.curveType = d.curveType;
       });
       // Return remarks for synchronous restoration by caller
       return s.remarks || '';

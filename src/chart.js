@@ -1,5 +1,5 @@
 import {
-  COLORS, BW_DASH,
+  COLORS, CURVES, BW_DASH,
   CURVE_SAMPLE_STEP, CURVE_START_FACTOR,
   LOG_PAD_X, LOG_PAD_Y,
   DEFAULT_X_RANGE, DEFAULT_Y_RANGE,
@@ -59,6 +59,7 @@ export function computeAxisRanges(relays, tx, faultPct) {
     const iset = getIset(r);
     if (iset <= 0) return;
     const If = getRelayFault(r, tx, faultPct);
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
 
     // Curve starts just above iset
     if (iset * CURVE_START_FACTOR < dataXMin) dataXMin = iset * CURVE_START_FACTOR;
@@ -66,7 +67,7 @@ export function computeAxisRanges(relays, tx, faultPct) {
     // Check operating point
     if (If > 0) {
       if (If > dataXMax) dataXMax = If;
-      const t = tripTime(If, iset, r.tms);
+      const t = tripTime(If, iset, r.tms, curve);
       if (isFinite(t) && t > 0) {
         if (t < dataYMin) dataYMin = t;
         if (t > dataYMax) dataYMax = t;
@@ -77,7 +78,7 @@ export function computeAxisRanges(relays, tx, faultPct) {
     for (let m = SAMPLE_MUL_STEP; m <= MAX_SAMPLE_MUL; m *= SAMPLE_MUL_STEP) {
       const I = iset * m;
       if (I > dataXMax) dataXMax = I;
-      const t = tripTime(I, iset, r.tms);
+      const t = tripTime(I, iset, r.tms, curve);
       if (isFinite(t) && t > 0) {
         if (t < dataYMin) dataYMin = t;
         if (t > dataYMax) dataYMax = t;
@@ -212,6 +213,7 @@ export function renderChart(canvas, { relays, tx, faultPct, theme }) {
     if (!r.enabled) return;
     const iset = getIset(r);
     if (iset <= 0) return;
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
 
     const curveColor = (theme.curveColors && theme.curveColors[i]) || COLORS[i];
     c.strokeStyle = curveColor;
@@ -229,7 +231,7 @@ export function renderChart(canvas, { relays, tx, faultPct, theme }) {
     c.beginPath();
     let first = true;
     for (let I = iset * CURVE_START_FACTOR; I <= xMax; I *= CURVE_SAMPLE_STEP) {
-      const t = tripTime(I, iset, r.tms);
+      const t = tripTime(I, iset, r.tms, curve);
       if (!isFinite(t) || t <= 0 || t < yMin || t > yMax || I < xMin) continue;
       const x = mapX(I), y = mapY(t);
       if (first) { c.moveTo(x, y); first = false; } else c.lineTo(x, y);
@@ -243,16 +245,16 @@ export function renderChart(canvas, { relays, tx, faultPct, theme }) {
       c.setLineDash([]);
     }
 
-    // Curve label — use relay label, position at 80% of visible x range
+    // Curve label — relay label + curve abbreviation, position at 80% of visible x range
     const labelLogX = Math.log10(xMin) + 0.8 * (Math.log10(xMax) - Math.log10(xMin));
     const li = Math.pow(10, labelLogX);
-    const lt = tripTime(li, iset, r.tms);
+    const lt = tripTime(li, iset, r.tms, curve);
     if (isFinite(lt) && lt >= yMin && lt <= yMax) {
       c.fillStyle = curveColor;
       c.font = theme.labelFont;
       c.textAlign = 'left';
       const label = r.label || `R${i + 1}`;
-      const shortLabel = label.length > 16 ? label.slice(0, 15) + '\u2026' : label;
+      const shortLabel = (label.length > 13 ? label.slice(0, 12) + '\u2026' : label) + ' [' + curve.short + ']';
       c.fillText(shortLabel, mapX(li) + (isScreen ? 5 : 10), mapY(lt) - (isScreen ? 8 : 14));
     }
   });
@@ -303,7 +305,8 @@ export function renderChart(canvas, { relays, tx, faultPct, theme }) {
       if (!r.enabled) return;
       const iset = getIset(r);
       if (iset <= 0) return;
-      const t = tripTime(fl.val, iset, r.tms);
+      const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+      const t = tripTime(fl.val, iset, r.tms, curve);
       if (!isFinite(t) || t <= 0 || t < yMin || t > yMax) return;
       const py = mapY(t);
 

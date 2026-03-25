@@ -1,5 +1,18 @@
-import { COLORS, escapeHTML } from './constants.js';
+import { COLORS, CURVES, escapeHTML } from './constants.js';
 import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault } from './math.js';
+
+function curveOptions(selected) {
+  const groups = {};
+  for (const [key, c] of Object.entries(CURVES)) {
+    if (!groups[c.standard]) groups[c.standard] = [];
+    groups[c.standard].push({ key, label: c.label });
+  }
+  return Object.entries(groups).map(([std, opts]) =>
+    `<optgroup label="${std}">${opts.map(o =>
+      `<option value="${o.key}"${o.key === selected ? ' selected' : ''}>${o.label}</option>`
+    ).join('')}</optgroup>`
+  ).join('');
+}
 
 // ---- Relay card builder ----
 
@@ -13,7 +26,7 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
         <div class="toggle-wrap">
           <span>ON</span>
           <label class="toggle">
-            <input type="checkbox" ${r.enabled ? 'checked' : ''} data-relay="${i}">
+            <input type="checkbox" ${r.enabled ? 'checked' : ''} data-relay="${i}" aria-label="Enable relay ${i + 1}">
             <span class="sl"></span>
           </label>
         </div>
@@ -22,17 +35,23 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
         CT Primary: ${r.ctPri} A &nbsp;|&nbsp; Pickup Mul: ${r.pickupMul.toFixed(2)} &nbsp;|&nbsp; TMS: ${r.tms.toFixed(2)}
       </div>
       <div class="card-fields">
-        <div class="field">
-          <label>CT Primary (A)</label>
-          <input type="number" class="num-input" data-relay="${i}" data-param="ctPri" value="${r.ctPri}" min="1" max="50000" step="1">
+        <div class="field" style="grid-column:1/-1;">
+          <label for="r${i}curveType">Curve Type</label>
+          <select class="curve-select" id="r${i}curveType" data-relay="${i}" data-param="curveType">
+            ${curveOptions(r.curveType)}
+          </select>
         </div>
         <div class="field">
-          <label>Pickup Mul (0\u20132)</label>
-          <input type="number" class="num-input" data-relay="${i}" data-param="pickupMul" value="${r.pickupMul.toFixed(2)}" min="0.01" max="2" step="0.01">
+          <label for="r${i}ctPri">CT Primary (A)</label>
+          <input type="number" class="num-input" id="r${i}ctPri" data-relay="${i}" data-param="ctPri" value="${r.ctPri}" min="1" max="50000" step="1">
         </div>
         <div class="field">
-          <label>TMS (0.10\u20131.00)</label>
-          <input type="number" class="num-input" data-relay="${i}" data-param="tms" value="${r.tms.toFixed(2)}" min="0.10" max="1.00" step="0.01">
+          <label for="r${i}pickupMul">Pickup Mul (0\u20132)</label>
+          <input type="number" class="num-input" id="r${i}pickupMul" data-relay="${i}" data-param="pickupMul" value="${r.pickupMul.toFixed(2)}" min="0.01" max="2" step="0.01">
+        </div>
+        <div class="field">
+          <label for="r${i}tms">TMS (0.10\u20131.00)</label>
+          <input type="number" class="num-input" id="r${i}tms" data-relay="${i}" data-param="tms" value="${r.tms.toFixed(2)}" min="0.10" max="1.00" step="0.01">
         </div>
       </div>
       <div class="calc-row" id="calcRow${i}"></div>
@@ -51,8 +70,16 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
     });
   });
 
+  // Wire curve type select events
+  container.querySelectorAll('.curve-select').forEach(sel => {
+    sel.addEventListener('change', e => {
+      relays[parseInt(e.target.dataset.relay)].curveType = e.target.value;
+      onRefresh();
+    });
+  });
+
   // Wire parameter input events
-  container.querySelectorAll('[data-param]').forEach(inp => {
+  container.querySelectorAll('input[data-param]').forEach(inp => {
     inp.addEventListener('input', e => {
       const idx = parseInt(e.target.dataset.relay);
       const p = e.target.dataset.param;
@@ -77,9 +104,10 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
 export function buildLegend(relays) {
   document.getElementById('legend').innerHTML = relays.map((r, i) => {
     const name = r.label || `R${i + 1}`;
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
     return `<span class="leg-item" style="opacity:${r.enabled ? 1 : 0.3}">
       <span class="leg-dot" style="background:${COLORS[i]}"></span>
-      ${escapeHTML(name)}
+      ${escapeHTML(name)} [${curve.short}]
     </span>`;
   }).join('');
 }
@@ -110,6 +138,7 @@ export function updateResults(relays, tx, faultPct) {
 
     const iset = getIset(r);
     const If = getRelayFault(r, tx, faultPct);
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
     const calcRow = document.getElementById('calcRow' + i);
     const trEl = document.getElementById('tr' + i);
 
@@ -120,12 +149,12 @@ export function updateResults(relays, tx, faultPct) {
 
     // Keep print-only params in sync
     const pp = document.getElementById('printParams' + i);
-    if (pp) pp.innerHTML = `CT Primary: ${r.ctPri} A &nbsp;|&nbsp; Pickup Mul: ${r.pickupMul.toFixed(2)} &nbsp;|&nbsp; TMS: ${r.tms.toFixed(2)}`;
+    if (pp) pp.innerHTML = `CT Primary: ${r.ctPri} A &nbsp;|&nbsp; Pickup Mul: ${r.pickupMul.toFixed(2)} &nbsp;|&nbsp; TMS: ${r.tms.toFixed(2)} &nbsp;|&nbsp; Curve: ${curve.short}`;
 
     if (!r.enabled) { trEl.textContent = 'OFF'; return; }
     if (iset <= 0) { trEl.textContent = 'No pickup'; return; }
 
-    const t = tripTime(If, iset, r.tms);
+    const t = tripTime(If, iset, r.tms, curve);
     const ratio = If / iset;
 
     if (isFinite(t) && t > 0) {
@@ -157,7 +186,8 @@ export function updateTable(relays, tx, faultPct) {
   // Build header
   const headerCells = active.map(({ r, i }) => {
     const name = r.label || `R${i + 1}`;
-    return `<th style="color:${COLORS[i]}">${escapeHTML(name)}</th>`;
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+    return `<th style="color:${COLORS[i]}">${escapeHTML(name)} [${curve.short}]</th>`;
   }).join('');
   thead.innerHTML = `<tr><th>Fault %</th>${headerCells}</tr>`;
 
@@ -171,7 +201,8 @@ export function updateTable(relays, tx, faultPct) {
       const iset = getIset(r);
       if (iset <= 0) return `<td style="color:var(--text-dim)">\u2014</td>`;
       const If = r.side === 'pri' ? priFault : secFault;
-      const t = tripTime(If, iset, r.tms);
+      const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+      const t = tripTime(If, iset, r.tms, curve);
       let display;
       if (isFinite(t) && t > 0) {
         display = `${t.toFixed(3)}s @ ${If.toFixed(0)}A`;
