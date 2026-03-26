@@ -40,13 +40,16 @@ vite.config.js          # Vite config (build to dist/)
 netlify.toml            # Netlify deploy config + redirects
 src/
   main.js               # Entry point — init, event wiring, refresh loop
-  constants.js           # Colors, defaults, IEC constants, chart params, utilities
+  constants.js           # Colors, defaults, IEC/IEEE constants, chart params, utilities
   math.js                # Pure math: calcFaultCurrent, tripTime, getIset, fault derivation
   state.js               # Mutable state object, localStorage save/load/reset
   chart.js               # Unified chart renderer (screen + print via theme objects)
-  ui.js                  # DOM: buildCards, buildLegend, updateResults, updateTable
-  export.js              # PDF export
+  ui.js                  # DOM: buildCards, buildLegend, updateResults, updateTable, CTI summary
+  export.js              # PDF and CSV export
   tooltip.js             # Mouse + touch tooltip handlers
+  cti.js                 # Coordination time interval computation
+  sharing.js             # URL-based state encoding/decoding for sharing
+  studies.js             # Named study management (save/load/delete/import/export)
   style.css              # All CSS (dark theme, responsive, print styles)
 ```
 
@@ -75,7 +78,7 @@ main.js       ← imports all, entry point
 
 ### Relay model
 
-Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multiplier, min 0.01), `tms` (time multiplier setting, 0.05-1.0), `curveType` (key into `CURVES` object, e.g. `'IEC_SI'`, `'IEEE_VI'`), `enabled`, `label`. Relays 0-1 default to primary side, 2-3 to secondary.
+Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multiplier, min 0.01), `tms` (time multiplier setting, 0.05-1.0), `curveType` (key into `CURVES` object, e.g. `'IEC_SI'`, `'IEEE_VI'`), `enabled`, `label`. Default 4 relays, supports 1-8 (MIN_RELAYS/MAX_RELAYS). Side is user-selectable per relay via dropdown. New relays added via `defaultRelay(index)` factory.
 
 ### Key conventions
 
@@ -92,4 +95,4 @@ Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multipli
 
 ### Current capabilities
 
-Single-page PWA simulator with: 4 configurable relays (pri/sec) with per-relay IEC/IEEE curve selection (7 curve types), transformer parameter derivation, fault level slider (5-100%), live log-log chart with tooltips (mouse + touch), results table at 10% intervals, custom labels, remarks field, PDF export with B&W chart, localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators, offline support via service worker, installable PWA.
+Single-page PWA simulator with: 1-8 configurable relays (dynamic add/remove) with per-relay side and IEC/IEEE curve selection (7 curve types), transformer parameter derivation, fault level slider (5-100%), live log-log chart with CTI brackets and tooltips (mouse + touch), results table at 10% intervals, coordination time interval display, custom labels, remarks field, report settings (company/project/doc ref), PDF export with B&W chart and CTI table, CSV export, URL-based state sharing, named study management (save/load/delete/import/export JSON), localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators, offline support via service worker, installable PWA.

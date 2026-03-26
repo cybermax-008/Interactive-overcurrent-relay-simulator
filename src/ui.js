@@ -1,4 +1,4 @@
-import { COLORS, CURVES, escapeHTML } from './constants.js';
+import { COLORS, CURVES, MAX_RELAYS, MIN_RELAYS, escapeHTML } from './constants.js';
 import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault } from './math.js';
 
 function curveOptions(selected) {
@@ -16,11 +16,14 @@ function curveOptions(selected) {
 
 // ---- Relay card builder ----
 
-export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
+export function buildCards(container, relays, onRefresh, onDebouncedRefresh, onAddRelay, onRemoveRelay) {
+  const canRemove = relays.length > MIN_RELAYS;
+  const canAdd = relays.length < MAX_RELAYS;
+
   container.innerHTML = relays.map((r, i) => `
-    <div class="relay-card ${r.enabled ? '' : 'disabled'}" data-idx="${i}" id="rc${i}" style="margin-bottom:8px;">
+    <div class="relay-card ${r.enabled ? '' : 'disabled'}" data-idx="${i}" id="rc${i}" style="margin-bottom:8px;border-left-color:${COLORS[i]};">
       <div class="card-header">
-        <span class="title">R${i + 1}</span>
+        <span class="title" style="color:${COLORS[i]};">R${i + 1}</span>
         <input type="text" class="label-input" data-relay="${i}" data-param="label" value="${escapeHTML(r.label)}" placeholder="Label..." maxlength="30">
         <span class="print-label" id="printLabel${i}" style="display:none;font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:600;">${escapeHTML(r.label)}</span>
         <div class="toggle-wrap">
@@ -29,13 +32,21 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
             <input type="checkbox" ${r.enabled ? 'checked' : ''} data-relay="${i}" aria-label="Enable relay ${i + 1}">
             <span class="sl"></span>
           </label>
+          ${canRemove ? `<button type="button" class="remove-relay-btn" data-relay="${i}" aria-label="Remove relay ${i + 1}" title="Remove relay">&times;</button>` : ''}
         </div>
       </div>
       <div class="print-params" id="printParams${i}" style="display:none;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#666;margin-bottom:4px;">
         CT Primary: ${r.ctPri} A &nbsp;|&nbsp; Pickup Mul: ${r.pickupMul.toFixed(2)} &nbsp;|&nbsp; TMS: ${r.tms.toFixed(2)}
       </div>
       <div class="card-fields">
-        <div class="field" style="grid-column:1/-1;">
+        <div class="field">
+          <label for="r${i}side">Side</label>
+          <select class="curve-select" id="r${i}side" data-relay="${i}" data-param="side">
+            <option value="pri"${r.side === 'pri' ? ' selected' : ''}>Primary</option>
+            <option value="sec"${r.side === 'sec' ? ' selected' : ''}>Secondary</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 2;">
           <label for="r${i}curveType">Curve Type</label>
           <select class="curve-select" id="r${i}curveType" data-relay="${i}" data-param="curveType">
             ${curveOptions(r.curveType)}
@@ -60,7 +71,7 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
         <span class="tv" id="tr${i}">\u2014</span>
       </div>
     </div>
-  `).join('');
+  `).join('') + (canAdd ? `<button type="button" class="add-relay-btn" id="addRelayBtn">+ Add Relay</button>` : '');
 
   // Wire toggle events
   container.querySelectorAll('.toggle input').forEach(t => {
@@ -70,13 +81,27 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh) {
     });
   });
 
-  // Wire curve type select events
+  // Wire curve type and side select events
   container.querySelectorAll('.curve-select').forEach(sel => {
     sel.addEventListener('change', e => {
-      relays[parseInt(e.target.dataset.relay)].curveType = e.target.value;
+      const idx = parseInt(e.target.dataset.relay);
+      const p = e.target.dataset.param;
+      if (p === 'curveType') relays[idx].curveType = e.target.value;
+      if (p === 'side') relays[idx].side = e.target.value;
       onRefresh();
     });
   });
+
+  // Wire remove relay buttons
+  container.querySelectorAll('.remove-relay-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      onRemoveRelay(parseInt(e.target.dataset.relay));
+    });
+  });
+
+  // Wire add relay button
+  const addBtn = container.querySelector('#addRelayBtn');
+  if (addBtn) addBtn.addEventListener('click', onAddRelay);
 
   // Wire parameter input events
   container.querySelectorAll('input[data-param]').forEach(inp => {
@@ -216,5 +241,21 @@ export function updateTable(relays, tx, faultPct) {
 
     return `<tr style="${isCurrent ? 'background:rgba(139,92,246,0.1)' : ''}">
       <td style="white-space:nowrap;${isCurrent ? 'color:#c4b5fd;font-weight:700' : ''}">${pct}%${isCurrent ? ' \u25c0' : ''}</td>${cells}</tr>`;
+  }).join('');
+}
+
+// ---- CTI summary display ----
+
+export function updateCTISummary(ctiPairs, relays) {
+  const el = document.getElementById('ctiSummary');
+  if (!ctiPairs || !ctiPairs.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = ctiPairs.map(p => {
+    const priName = escapeHTML(relays[p.primaryIdx].label || `R${p.primaryIdx + 1}`);
+    const bkpName = escapeHTML(relays[p.backupIdx].label || `R${p.backupIdx + 1}`);
+    const cls = `cti-${p.status}`;
+    return `<span class="cti-pair">${priName} \u2192 ${bkpName}: <span class="cti-badge ${cls}">${p.cti.toFixed(2)}s</span></span>`;
   }).join('');
 }

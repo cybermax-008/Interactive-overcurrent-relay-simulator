@@ -75,15 +75,46 @@
 - **Root cause:** CSS grid item `.chart-panel` missing `min-width: 0` — prevented grid from shrinking the panel below its intrinsic content width
 - **Fix:** Added `min-width: 0` to `.chart-panel`, `min-width: 0; overflow: hidden` to `.canvas-wrap`, `display: block` to canvas, `overflow: auto` (both axes) to `.results-table`
 
+### Sprint 6A — Dynamic Relay Count
+- **1-8 relays:** Add/Remove buttons, 8 colors + 8 B&W dash patterns
+- **Side selector:** Per-relay Primary/Secondary dropdown (no longer hardcoded by index)
+- **Inline colors:** Replaced CSS `[data-idx]` rules with inline styles — scales to any N
+- **Scrollable controls:** Controls panel scrolls when many relays exceed viewport
+- **State migration:** Variable-length relay arrays, `defaultRelay()` factory for new relays
+
+### Sprint 6B — URL-Based State Sharing
+- **Share button:** Copies encoded URL to clipboard with toast confirmation
+- **URL loading:** State encoded as compact base64 JSON, loaded on init (takes precedence over localStorage)
+- **Clean URL:** URL parameter cleared after loading via `history.replaceState`
+
+### Sprint 6C — Study Management
+- **Collapsible studies panel:** Save/load/delete named configurations
+- **Import/Export:** JSON file import/export for studies (single or bulk)
+- **localStorage-based:** Studies stored separately from current state
+
+### Sprint 6D — CTI Display
+- **Computation:** Groups enabled relays by side, sorts by trip time, computes grading margins
+- **Chart brackets:** Color-coded vertical brackets (green >=0.3s, yellow 0.2-0.3s, red <0.2s)
+- **UI summary:** Badge display below fault summary with CTI values per relay pair
+- **PDF export:** Coordination Margins table with OK/MARGINAL/FAIL status
+
+### Sprint 6E — Enhanced Export
+- **CSV export:** Download fault table data as `.csv` file
+- **Report settings:** Company name, project ref, doc ref, revision fields (persisted in state)
+- **Branded PDF:** Report header with company/project info, page footer with date
+- Build output: 36.0 KB JS + 17.8 KB CSS (12.2 KB + 4.0 KB gzipped) — 14 modules
+
 ## Next steps
-1. **Sprint 6 — Product Features** (6-8 relays, CTI display, URL sharing, study management)
+1. **Sprint 7 — Advanced Features** (fuse/MCB TCC curves, cable damage curves, motor starting overlay)
 2. **Sprint 4.5 — Definite Time element** (optional high-set instantaneous per relay)
 3. Consider removing legacy `simulator.html` now that Vercel deploy is confirmed
+4. Cross-reference IEEE curve constants with IEEE C37.112 standard
 
 ## Gotchas / things to watch
 - `simulator.html` legacy file has Sprint 0+1 fixes but is NOT modular — will drift from `src/` modules. Safe to remove now.
-- `chart.js` is the largest module (~370 lines) — could be further decomposed later
+- `chart.js` is the largest module (~400 lines) — could be further decomposed later
 - `index.html` at root is the Vite entry point (not the old redirect)
 - `node_modules/` and `dist/` are gitignored — Vercel runs `npm install` + `npm run build`
 - IEEE curve constants should be cross-referenced with IEEE C37.112 standard for accuracy
 - PWA service worker auto-updates — users get new versions on next visit after deploy
+- Vite pinned to v7.x for vite-plugin-pwa compatibility (v8 not supported yet)

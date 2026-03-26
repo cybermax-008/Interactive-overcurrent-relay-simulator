@@ -37,6 +37,20 @@
 
   <div class="layout">
     <div class="controls-panel">
+      <!-- Studies -->
+      <div class="studies-card" id="studiesCard">
+        <button type="button" class="studies-toggle" id="studiesToggle">📂 Studies <span id="studiesCount"></span> <span class="studies-arrow" id="studiesArrow">▸</span></button>
+        <div class="studies-body" id="studiesBody" style="display:none;">
+          <div class="studies-actions">
+            <button type="button" class="studies-action-btn" id="studySaveBtn">Save Current</button>
+            <button type="button" class="studies-action-btn" id="studyImportBtn">Import JSON</button>
+            <button type="button" class="studies-action-btn" id="studyExportAllBtn">Export All</button>
+            <input type="file" id="studyFileInput" accept=".json" style="display:none;">
+          </div>
+          <div class="studies-list" id="studiesList"></div>
+        </div>
+      </div>
+
       <!-- Transformer Parameters -->
       <div class="tx-card">
         <div class="tx-title">🔌 Transformer Parameters</div>
@@ -85,16 +99,29 @@
       <!-- Relay Cards -->
       <div id="cardsContainer"></div>
 
+      <!-- Report Settings -->
+      <div class="remarks-card">
+        <label class="remarks-label">📋 Report Settings</label>
+        <div class="report-fields">
+          <input type="text" class="label-input" id="rsCompany" placeholder="Company name" aria-label="Company name">
+          <input type="text" class="label-input" id="rsProject" placeholder="Project ref" aria-label="Project reference">
+          <input type="text" class="label-input" id="rsDocRef" placeholder="Doc ref" aria-label="Document reference">
+          <input type="text" class="label-input" id="rsRevision" placeholder="Rev" aria-label="Revision">
+        </div>
+      </div>
+
       <!-- Remarks -->
       <div class="remarks-card">
         <label class="remarks-label">📝 Remarks / Notes</label>
         <textarea id="remarksField" class="remarks-input" placeholder="Add notes here... (visible in export)" rows="3" aria-label="Remarks and notes"></textarea>
       </div>
 
-      <!-- Reset -->
+      <!-- Actions -->
       <div style="display:flex;gap:8px;">
-        <button type="button" class="reset-btn" id="resetBtn" style="flex:1;">↺ Reset All to Defaults</button>
-        <button type="button" class="export-btn" id="exportBtn" style="flex:1;">📄 Export as PDF</button>
+        <button type="button" class="reset-btn" id="resetBtn" style="flex:1;">↺ Reset</button>
+        <button type="button" class="export-btn" id="exportBtn" style="flex:1;">📄 PDF</button>
+        <button type="button" class="export-btn" id="csvBtn" style="flex:1;">📊 CSV</button>
+        <button type="button" class="share-btn" id="shareBtn" style="flex:1;">🔗 Share</button>
       </div>
     </div>
 
@@ -107,6 +134,7 @@
         <span>Primary I<sub>fault</sub>: <span class="fv" id="fsPri">—</span></span>
         <span>Secondary I<sub>fault</sub>: <span class="fv" id="fsSec">—</span></span>
       </div>
+      <div class="cti-summary" id="ctiSummary"></div>
       <div class="canvas-wrap">
         <canvas id="chart" role="img" aria-label="Trip time vs fault current log-log chart"></canvas>
         <div class="tooltip" id="tooltip"></div>

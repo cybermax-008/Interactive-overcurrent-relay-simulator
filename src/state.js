@@ -1,16 +1,17 @@
-import { DEFAULTS, STORAGE_KEY, CURVES } from './constants.js';
+import { DEFAULTS, STORAGE_KEY, CURVES, MIN_RELAYS, MAX_RELAYS, defaultRelay } from './constants.js';
 
 // Mutable shared state
 export const state = {
   tx: null,
   faultPct: 100,
-  relays: []
+  relays: [],
+  reportSettings: { companyName: '', projectRef: '', docRef: '', revision: '' },
 };
 
 export function saveState() {
   try {
     const remarks = document.getElementById('remarksField').value;
-    const data = { tx: state.tx, faultPct: state.faultPct, relays: state.relays, remarks };
+    const data = { tx: state.tx, faultPct: state.faultPct, relays: state.relays, remarks, reportSettings: state.reportSettings };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) { /* silently fail */ }
 }
@@ -23,11 +24,11 @@ export function loadState() {
       state.tx = { ...JSON.parse(JSON.stringify(DEFAULTS.tx)), ...(s.tx || {}) };
       state.faultPct = typeof s.faultPct === 'number' ? s.faultPct : DEFAULTS.faultPct;
       state.relays = s.relays || JSON.parse(JSON.stringify(DEFAULTS.relays));
-      // Ensure exactly 4 relays with all fields (migration)
-      while (state.relays.length < 4) state.relays.push(JSON.parse(JSON.stringify(DEFAULTS.relays[state.relays.length])));
-      if (state.relays.length > 4) state.relays.length = 4;
+      // Ensure relay count within bounds (migration)
+      while (state.relays.length < MIN_RELAYS) state.relays.push(defaultRelay(state.relays.length));
+      if (state.relays.length > MAX_RELAYS) state.relays.length = MAX_RELAYS;
       state.relays.forEach((r, i) => {
-        const d = DEFAULTS.relays[i];
+        const d = i < DEFAULTS.relays.length ? DEFAULTS.relays[i] : defaultRelay(i);
         if (r.label === undefined) r.label = d.label;
         if (r.side === undefined) r.side = d.side;
         if (r.ctPri === undefined) r.ctPri = d.ctPri;
@@ -36,6 +37,7 @@ export function loadState() {
         if (r.enabled === undefined) r.enabled = d.enabled;
         if (r.curveType === undefined || !CURVES[r.curveType]) r.curveType = d.curveType;
       });
+      if (s.reportSettings) state.reportSettings = { ...state.reportSettings, ...s.reportSettings };
       // Return remarks for synchronous restoration by caller
       return s.remarks || '';
     }
@@ -49,6 +51,18 @@ export function resetToDefaults() {
   state.relays = JSON.parse(JSON.stringify(DEFAULTS.relays));
   localStorage.removeItem(STORAGE_KEY);
   document.getElementById('remarksField').value = '';
+}
+
+export function addRelay() {
+  if (state.relays.length >= MAX_RELAYS) return false;
+  state.relays.push(defaultRelay(state.relays.length));
+  return true;
+}
+
+export function removeRelay(index) {
+  if (state.relays.length <= MIN_RELAYS) return false;
+  state.relays.splice(index, 1);
+  return true;
 }
 
 export function populateTxInputs() {

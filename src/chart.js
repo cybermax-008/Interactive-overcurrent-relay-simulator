@@ -20,7 +20,7 @@ export const SCREEN_THEME = {
   axisTitleFont: '11px DM Sans',
   curveWidth: 2.5,
   curveShadow: true,
-  curveColors: null,   // uses COLORS array
+  curveColor: null,    // uses COLORS[i] per relay
   dashPatterns: null,   // no dashes (solid colored)
   faultLineColors: { pri: '#c4b5fd', sec: '#f9a8d4' },
   labelFont: 'bold 10px JetBrains Mono',
@@ -40,7 +40,7 @@ export const PRINT_THEME = {
   axisTitleFont: '26px sans-serif',
   curveWidth: 4,
   curveShadow: false,
-  curveColors: ['#000','#000','#000','#000'],
+  curveColor: '#000',  // single color for all curves in B&W mode
   dashPatterns: BW_DASH,
   faultLineColors: { pri: '#888', sec: '#888' },
   labelFont: 'bold 24px sans-serif',
@@ -119,7 +119,9 @@ export function logTicks(min, max) {
 
 // ---- Unified chart renderer ----
 
-export function renderChart(canvas, { relays, tx, faultPct, theme }) {
+const CTI_COLORS = { good: '#10b981', warning: '#f59e0b', danger: '#ef4444' };
+
+export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
   const isScreen = theme.mode === 'screen';
   const pad = theme.pad;
   let W, H, c;
@@ -215,7 +217,7 @@ export function renderChart(canvas, { relays, tx, faultPct, theme }) {
     if (iset <= 0) return;
     const curve = CURVES[r.curveType] || CURVES.IEC_SI;
 
-    const curveColor = (theme.curveColors && theme.curveColors[i]) || COLORS[i];
+    const curveColor = theme.curveColor || COLORS[i];
     c.strokeStyle = curveColor;
     c.lineWidth = theme.curveWidth;
 
@@ -355,6 +357,43 @@ export function renderChart(canvas, { relays, tx, faultPct, theme }) {
     });
   });
 
+  // CTI brackets
+  if (ctiPairs && ctiPairs.length) {
+    const bracketOffset = isScreen ? 30 : 50;
+    const tickW = isScreen ? 6 : 10;
+    const fontSize = isScreen ? '9px JetBrains Mono' : '20px sans-serif';
+
+    ctiPairs.forEach((pair, pi) => {
+      const faultVal = pair.side === 'pri' ? priFault : secFault;
+      if (faultVal <= xMin || faultVal > xMax) return;
+      const y1 = mapY(pair.primaryTime);
+      const y2 = mapY(pair.backupTime);
+      if (y1 < pad.top || y2 < pad.top || y1 > pad.top + ch || y2 > pad.top + ch) return;
+
+      const bx = mapX(faultVal) + bracketOffset + pi * (isScreen ? 18 : 30);
+      if (bx > pad.left + cw) return;
+      const color = isScreen ? CTI_COLORS[pair.status] : '#000';
+
+      // Vertical line
+      c.strokeStyle = color;
+      c.lineWidth = isScreen ? 1.5 : 2.5;
+      c.setLineDash([]);
+      c.beginPath(); c.moveTo(bx, y1); c.lineTo(bx, y2); c.stroke();
+
+      // Ticks
+      c.beginPath(); c.moveTo(bx - tickW, y1); c.lineTo(bx, y1); c.stroke();
+      c.beginPath(); c.moveTo(bx - tickW, y2); c.lineTo(bx, y2); c.stroke();
+
+      // Label
+      c.fillStyle = color;
+      c.font = fontSize;
+      c.textAlign = 'left';
+      const label = pair.cti.toFixed(2) + 's';
+      const midY = (y1 + y2) / 2;
+      c.fillText(label, bx + (isScreen ? 3 : 6), midY + (isScreen ? 3 : 6));
+    });
+  }
+
   // Store coordinate system on canvas for tooltip use (screen mode only)
   if (isScreen) {
     canvas._cp = { pad, cw, ch, xMin, xMax, yMin, yMax, mapX, mapY };
@@ -368,13 +407,13 @@ export function renderChart(canvas, { relays, tx, faultPct, theme }) {
 
 // ---- Convenience wrappers ----
 
-export function drawChart(canvas, relays, tx, faultPct) {
-  renderChart(canvas, { relays, tx, faultPct, theme: SCREEN_THEME });
+export function drawChart(canvas, relays, tx, faultPct, ctiPairs) {
+  renderChart(canvas, { relays, tx, faultPct, theme: SCREEN_THEME, ctiPairs });
 }
 
-export function renderBWChart(W, H, relays, tx, faultPct) {
+export function renderBWChart(W, H, relays, tx, faultPct, ctiPairs) {
   const bwc = document.createElement('canvas');
   bwc.width = W;
   bwc.height = H;
-  return renderChart(bwc, { relays, tx, faultPct, theme: PRINT_THEME });
+  return renderChart(bwc, { relays, tx, faultPct, theme: PRINT_THEME, ctiPairs });
 }

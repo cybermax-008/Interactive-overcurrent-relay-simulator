@@ -10,9 +10,17 @@ export function debounce(fn, ms) {
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
 }
 
-// ---- Color palette ----
+// ---- Relay limits ----
 
-export const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#f43f5e'];
+export const MIN_RELAYS = 1;
+export const MAX_RELAYS = 8;
+
+// ---- Color palette (8 high-contrast colors on dark bg) ----
+
+export const COLORS = [
+  '#f59e0b', '#3b82f6', '#10b981', '#f43f5e',
+  '#8b5cf6', '#06b6d4', '#d946ef', '#84cc16',
+];
 
 // ---- Default state ----
 
@@ -26,6 +34,17 @@ export const DEFAULTS = {
     { ctPri: 600, pickupMul: 0.80, tms: 0.10, enabled: true, label: 'Secondary OC2', side: 'sec', curveType: 'IEC_SI' },
   ]
 };
+
+// ---- Relay factory ----
+
+export function defaultRelay(index) {
+  const side = index % 2 === 0 ? 'pri' : 'sec';
+  return {
+    ctPri: side === 'pri' ? 200 : 600,
+    pickupMul: 0.50, tms: 0.30, enabled: true,
+    label: `Relay ${index + 1}`, side, curveType: 'IEC_SI',
+  };
+}
 
 // ---- Persistence ----
 
@@ -65,5 +84,11 @@ export const EXPORT_CHART_H = 1500;
 
 // ---- B&W dash patterns for PDF export ----
 
-export const BW_DASH = [[], [20, 10], [8, 8], [24, 8, 6, 8]];
-export const BW_DASH_NAMES = ['Solid ———', 'Dashed – – –', 'Dotted · · · ·', 'Dash-dot –·–·'];
+export const BW_DASH = [
+  [], [20, 10], [8, 8], [24, 8, 6, 8],
+  [4, 4], [16, 6, 4, 6, 4, 6], [2, 6], [30, 8],
+];
+export const BW_DASH_NAMES = [
+  'Solid ———', 'Dashed – – –', 'Dotted · · · ·', 'Dash-dot –·–·',
+  'Short dash ‐ ‐ ‐', 'Dash-dot-dot –··–', 'Spaced dot ·  ·  ·', 'Long dash ——  ——',
+];
