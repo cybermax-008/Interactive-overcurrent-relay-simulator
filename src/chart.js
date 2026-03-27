@@ -5,7 +5,7 @@ import {
   DEFAULT_X_RANGE, DEFAULT_Y_RANGE,
   MAX_SAMPLE_MUL, SAMPLE_MUL_STEP,
 } from './constants.js';
-import { getIset, getRelayFault, tripTime, getPriFault, getSecFault } from './math.js';
+import { getIset, getRelayFault, tripTime, getPriFault, getSecFault, getDTPickup, effectiveTripTime } from './math.js';
 
 // ---- Theme definitions ----
 
@@ -67,11 +67,20 @@ export function computeAxisRanges(relays, tx, faultPct) {
     // Check operating point
     if (If > 0) {
       if (If > dataXMax) dataXMax = If;
-      const t = tripTime(If, iset, r.tms, curve);
+      const t = effectiveTripTime(If, r, curve);
       if (isFinite(t) && t > 0) {
         if (t < dataYMin) dataYMin = t;
         if (t > dataYMax) dataYMax = t;
       }
+    }
+
+    // DT element: include DT pickup in X range and delay in Y range
+    if (r.dtEnabled) {
+      const dtPickup = getDTPickup(r);
+      if (dtPickup > dataXMax) dataXMax = dtPickup;
+      const dtDelay = r.dtDelay;
+      if (dtDelay > 0 && dtDelay < dataYMin) dataYMin = dtDelay;
+      if (dtDelay > 0 && dtDelay > dataYMax) dataYMax = dtDelay;
     }
 
     // Sample some points along the curve for Y range
@@ -261,6 +270,70 @@ export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
     }
   });
 
+  // DT horizontal lines
+  relays.forEach((r, i) => {
+    if (!r.enabled || !r.dtEnabled) return;
+    const dtPickup = getDTPickup(r);
+    const dtDelay = r.dtDelay;
+    if (dtPickup <= 0 || dtPickup > xMax) return;
+
+    const curveColor = theme.curveColor || COLORS[i];
+    c.strokeStyle = curveColor;
+    c.lineWidth = theme.curveWidth * 0.8;
+    c.setLineDash(isScreen ? [4, 4] : [8, 8]);
+
+    // Vertical drop from IDMT curve to DT delay at DT pickup current
+    const iset = getIset(r);
+    const curve = CURVES[r.curveType] || CURVES.IEC_SI;
+    const idmtAtDT = tripTime(dtPickup, iset, r.tms, curve);
+    const dtX = Math.max(mapX(dtPickup), pad.left);
+
+    // Horizontal line from DT pickup to right edge at dtDelay
+    if (dtDelay > 0 && dtDelay >= yMin && dtDelay <= yMax) {
+      const dtY = mapY(dtDelay);
+      c.beginPath();
+      c.moveTo(dtX, dtY);
+      c.lineTo(pad.left + cw, dtY);
+      c.stroke();
+
+      // Vertical connector from IDMT curve down to DT line
+      if (isFinite(idmtAtDT) && idmtAtDT > 0 && idmtAtDT >= yMin && idmtAtDT <= yMax) {
+        c.beginPath();
+        c.moveTo(dtX, mapY(idmtAtDT));
+        c.lineTo(dtX, dtY);
+        c.stroke();
+      }
+
+      // DT label
+      c.fillStyle = curveColor;
+      c.font = isScreen ? '8px JetBrains Mono' : '18px sans-serif';
+      c.textAlign = 'right';
+      c.fillText(`DT ${dtDelay.toFixed(2)}s`, pad.left + cw - (isScreen ? 4 : 8), dtY - (isScreen ? 4 : 8));
+    } else if (dtDelay === 0) {
+      // Instantaneous: draw at yMin (bottom of log scale)
+      const dtY = mapY(yMin);
+      c.beginPath();
+      c.moveTo(dtX, dtY);
+      c.lineTo(pad.left + cw, dtY);
+      c.stroke();
+
+      // Vertical connector
+      if (isFinite(idmtAtDT) && idmtAtDT > 0 && idmtAtDT >= yMin && idmtAtDT <= yMax) {
+        c.beginPath();
+        c.moveTo(dtX, mapY(idmtAtDT));
+        c.lineTo(dtX, dtY);
+        c.stroke();
+      }
+
+      c.fillStyle = curveColor;
+      c.font = isScreen ? '8px JetBrains Mono' : '18px sans-serif';
+      c.textAlign = 'right';
+      c.fillText('DT Inst.', pad.left + cw - (isScreen ? 4 : 8), dtY - (isScreen ? 4 : 8));
+    }
+
+    c.setLineDash([]);
+  });
+
   // Fault current vertical lines
   const priFault = getPriFault(tx, faultPct);
   const secFault = getSecFault(tx, faultPct);
@@ -308,8 +381,8 @@ export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
       const iset = getIset(r);
       if (iset <= 0) return;
       const curve = CURVES[r.curveType] || CURVES.IEC_SI;
-      const t = tripTime(fl.val, iset, r.tms, curve);
-      if (!isFinite(t) || t <= 0 || t < yMin || t > yMax) return;
+      const t = effectiveTripTime(fl.val, r, curve);
+      if (!isFinite(t) || t < 0 || t < yMin || t > yMax) return;
       const py = mapY(t);
 
       if (isScreen) {

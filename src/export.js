@@ -1,5 +1,5 @@
 import { escapeHTML, CURVES, BW_DASH_NAMES, EXPORT_CHART_W, EXPORT_CHART_H } from './constants.js';
-import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault } from './math.js';
+import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault, getDTPickup, effectiveTripTime } from './math.js';
 import { renderBWChart } from './chart.js';
 
 export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
@@ -21,9 +21,10 @@ export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
     const iset = getIset(r);
     const If = getRelayFault(r, tx, faultPct);
     const curve = CURVES[r.curveType] || CURVES.IEC_SI;
-    const t = tripTime(If, iset, r.tms, curve);
-    const tStr = isFinite(t) && t > 0 ? t.toFixed(3) + ' s' : 'No trip';
+    const t = effectiveTripTime(If, r, curve);
+    const tStr = isFinite(t) && t >= 0 ? t.toFixed(3) + ' s' : 'No trip';
     const ratio = iset > 0 ? (If / iset).toFixed(2) + 'x' : '\u2014';
+    const dtInfo = r.dtEnabled ? getDTPickup(r).toFixed(0) + 'A @ ' + r.dtDelay.toFixed(2) + 's' : '\u2014';
     return `<tr>
       <td style="font-weight:700">${escapeHTML(r.label || 'R' + (i+1))}</td>
       <td>${BW_DASH_NAMES[i] || 'Solid'}</td>
@@ -33,6 +34,7 @@ export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
       <td>${r.pickupMul.toFixed(2)}</td>
       <td>${iset.toFixed(1)}</td>
       <td>${r.tms.toFixed(2)}</td>
+      <td>${dtInfo}</td>
       <td>${If.toFixed(1)}</td>
       <td>${tStr}</td>
       <td>${ratio}</td>
@@ -48,9 +50,9 @@ export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
       const iset = getIset(r);
       const If = r.side === 'pri' ? priF : secF;
       const curve = CURVES[r.curveType] || CURVES.IEC_SI;
-      const t = tripTime(If, iset, r.tms, curve);
+      const t = effectiveTripTime(If, r, curve);
       let val;
-      if (isFinite(t) && t > 0) val = t.toFixed(3) + 's @ ' + If.toFixed(0) + 'A';
+      if (isFinite(t) && t >= 0) val = t.toFixed(3) + 's @ ' + If.toFixed(0) + 'A';
       else if (If <= iset) val = 'No trip @ ' + If.toFixed(0) + 'A';
       else val = '\u221e';
       return `<td>${val}</td>`;
@@ -117,7 +119,7 @@ export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
   <table>
     <thead><tr>
       <th>Relay</th><th>Line Style</th><th>Curve Type</th><th>Side</th><th>CT Pri (A)</th><th>Pickup Mul</th>
-      <th>I<sub>set</sub> (A)</th><th>TMS</th><th>I<sub>fault</sub> (A)</th><th>Trip Time</th><th>Multiple</th>
+      <th>I<sub>set</sub> (A)</th><th>TMS</th><th>High-Set DT</th><th>I<sub>fault</sub> (A)</th><th>Trip Time</th><th>Multiple</th>
     </tr></thead>
     <tbody>${settingsRows}</tbody>
   </table>
@@ -179,8 +181,8 @@ export function exportCSV(tx, faultPct, relays) {
       const iset = getIset(r);
       const If = r.side === 'pri' ? priF : secF;
       const curve = CURVES[r.curveType] || CURVES.IEC_SI;
-      const t = tripTime(If, iset, r.tms, curve);
-      cols.push(isFinite(t) && t > 0 ? t.toFixed(3) : 'N/A');
+      const t = effectiveTripTime(If, r, curve);
+      cols.push(isFinite(t) && t >= 0 ? t.toFixed(3) : 'N/A');
       cols.push(If.toFixed(1));
     });
 

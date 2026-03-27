@@ -104,17 +104,27 @@
 - **Branded PDF:** Report header with company/project info, page footer with date
 - Build output: 36.0 KB JS + 17.8 KB CSS (12.2 KB + 4.0 KB gzipped) — 14 modules
 
+### Cleanup — 2026-03-26
+- Removed legacy `simulator.html` (1400+ lines, was drifting from modular codebase)
+- Removed `netlify.toml` (no longer on Netlify)
+- Cleaned `vercel.json` (removed simulator.html redirect)
+- Updated `README.md` (now points to Vercel URL)
+- Cross-referenced IEEE C37.112 constants — all correct (verified against standard Table 1)
+
+### Sprint 4.5 — Definite Time Element
+- **Per-relay DT fields:** `dtEnabled`, `dtPickupMul` (1.0-50, default 5.0), `dtDelay` (0-1.0s, default 0)
+- **effectiveTripTime():** Returns `min(IDMT, DT)` when DT is active and fault exceeds DT pickup
+- **Chart:** Dashed horizontal DT lines from pickup current to right edge, vertical connector to IDMT curve
+- **All consumers updated:** ui, chart, tooltip, export (PDF+CSV), CTI, sharing, state migration
+- **UI:** Checkbox toggle per relay card, shows DT Pickup Mul and DT Delay fields when enabled
+- Build output: 39.4 KB JS + 18.3 KB CSS (13.0 KB + 4.1 KB gzipped) — 14 modules
+
 ## Next steps
 1. **Sprint 7 — Advanced Features** (fuse/MCB TCC curves, cable damage curves, motor starting overlay)
-2. **Sprint 4.5 — Definite Time element** (optional high-set instantaneous per relay)
-3. Consider removing legacy `simulator.html` now that Vercel deploy is confirmed
-4. Cross-reference IEEE curve constants with IEEE C37.112 standard
 
 ## Gotchas / things to watch
-- `simulator.html` legacy file has Sprint 0+1 fixes but is NOT modular — will drift from `src/` modules. Safe to remove now.
-- `chart.js` is the largest module (~400 lines) — could be further decomposed later
-- `index.html` at root is the Vite entry point (not the old redirect)
+- `chart.js` is the largest module (~450 lines) — could be further decomposed later
+- `index.html` at root is the Vite entry point
 - `node_modules/` and `dist/` are gitignored — Vercel runs `npm install` + `npm run build`
-- IEEE curve constants should be cross-referenced with IEEE C37.112 standard for accuracy
 - PWA service worker auto-updates — users get new versions on next visit after deploy
 - Vite pinned to v7.x for vite-plugin-pwa compatibility (v8 not supported yet)

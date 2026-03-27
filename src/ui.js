@@ -1,5 +1,5 @@
 import { COLORS, CURVES, MAX_RELAYS, MIN_RELAYS, escapeHTML } from './constants.js';
-import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault } from './math.js';
+import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault, getDTPickup, effectiveTripTime } from './math.js';
 
 function curveOptions(selected) {
   const groups = {};
@@ -65,6 +65,22 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh, onA
           <input type="number" class="num-input" id="r${i}tms" data-relay="${i}" data-param="tms" value="${r.tms.toFixed(2)}" min="0.10" max="1.00" step="0.01">
         </div>
       </div>
+      <div class="dt-section">
+        <label class="dt-toggle-label">
+          <input type="checkbox" class="dt-toggle" data-relay="${i}" ${r.dtEnabled ? 'checked' : ''} aria-label="Enable high-set DT for relay ${i + 1}">
+          <span class="dt-label-text">High-Set DT</span>
+        </label>
+        <div class="dt-fields" style="display:${r.dtEnabled ? 'grid' : 'none'};" id="dtFields${i}">
+          <div class="field">
+            <label for="r${i}dtPickupMul">DT Pickup Mul</label>
+            <input type="number" class="num-input" id="r${i}dtPickupMul" data-relay="${i}" data-param="dtPickupMul" value="${r.dtPickupMul.toFixed(1)}" min="1.0" max="50" step="0.1">
+          </div>
+          <div class="field">
+            <label for="r${i}dtDelay">DT Delay (s)</label>
+            <input type="number" class="num-input" id="r${i}dtDelay" data-relay="${i}" data-param="dtDelay" value="${r.dtDelay.toFixed(2)}" min="0" max="1.0" step="0.01">
+          </div>
+        </div>
+      </div>
       <div class="calc-row" id="calcRow${i}"></div>
       <div class="card-result">
         <span>Trip Time:</span>
@@ -103,6 +119,17 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh, onA
   const addBtn = container.querySelector('#addRelayBtn');
   if (addBtn) addBtn.addEventListener('click', onAddRelay);
 
+  // Wire DT toggle events
+  container.querySelectorAll('.dt-toggle').forEach(t => {
+    t.addEventListener('change', e => {
+      const idx = parseInt(e.target.dataset.relay);
+      relays[idx].dtEnabled = e.target.checked;
+      const dtFields = document.getElementById('dtFields' + idx);
+      if (dtFields) dtFields.style.display = e.target.checked ? 'grid' : 'none';
+      onRefresh();
+    });
+  });
+
   // Wire parameter input events
   container.querySelectorAll('input[data-param]').forEach(inp => {
     inp.addEventListener('input', e => {
@@ -119,6 +146,8 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh, onA
       if (p === 'ctPri') relays[idx].ctPri = Math.max(1, Math.round(val));
       if (p === 'pickupMul') relays[idx].pickupMul = Math.max(0.01, Math.min(2, val));
       if (p === 'tms') relays[idx].tms = Math.max(0.05, Math.min(1.0, val));
+      if (p === 'dtPickupMul') relays[idx].dtPickupMul = Math.max(1.0, Math.min(50, val));
+      if (p === 'dtDelay') relays[idx].dtDelay = Math.max(0, Math.min(1.0, val));
       onDebouncedRefresh();
     });
   });
@@ -167,23 +196,29 @@ export function updateResults(relays, tx, faultPct) {
     const calcRow = document.getElementById('calcRow' + i);
     const trEl = document.getElementById('tr' + i);
 
-    calcRow.innerHTML = `
+    const dtPickup = r.dtEnabled ? getDTPickup(r) : null;
+    let calcLines = `
       <span>I<sub>set</sub> = ${r.ctPri} \u00d7 ${r.pickupMul.toFixed(2)} = <span class="computed">${iset.toFixed(1)} A</span></span>
       <span>I<sub>fault</sub> (${r.side === 'pri' ? 'Pri' : 'Sec'}) = <span class="computed">${If.toFixed(1)} A</span></span>
     `;
+    if (r.dtEnabled) {
+      calcLines += `<span>DT Pickup = ${r.ctPri} \u00d7 ${r.dtPickupMul.toFixed(1)} = <span class="computed">${dtPickup.toFixed(1)} A</span> @ ${r.dtDelay.toFixed(2)}s</span>`;
+    }
+    calcRow.innerHTML = calcLines;
 
     // Keep print-only params in sync
     const pp = document.getElementById('printParams' + i);
-    if (pp) pp.innerHTML = `CT Primary: ${r.ctPri} A &nbsp;|&nbsp; Pickup Mul: ${r.pickupMul.toFixed(2)} &nbsp;|&nbsp; TMS: ${r.tms.toFixed(2)} &nbsp;|&nbsp; Curve: ${curve.short}`;
+    if (pp) pp.innerHTML = `CT Primary: ${r.ctPri} A &nbsp;|&nbsp; Pickup Mul: ${r.pickupMul.toFixed(2)} &nbsp;|&nbsp; TMS: ${r.tms.toFixed(2)} &nbsp;|&nbsp; Curve: ${curve.short}${r.dtEnabled ? ' &nbsp;|&nbsp; DT: ' + dtPickup.toFixed(0) + 'A @ ' + r.dtDelay.toFixed(2) + 's' : ''}`;
 
     if (!r.enabled) { trEl.textContent = 'OFF'; return; }
     if (iset <= 0) { trEl.textContent = 'No pickup'; return; }
 
-    const t = tripTime(If, iset, r.tms, curve);
+    const t = effectiveTripTime(If, r, curve);
     const ratio = If / iset;
+    const isDT = r.dtEnabled && dtPickup && If >= dtPickup && r.dtDelay <= tripTime(If, iset, r.tms, curve);
 
-    if (isFinite(t) && t > 0) {
-      trEl.textContent = t.toFixed(3) + ' s  (' + ratio.toFixed(2) + 'x)';
+    if (isFinite(t) && t >= 0) {
+      trEl.textContent = t.toFixed(3) + ' s  (' + ratio.toFixed(2) + 'x)' + (isDT ? ' DT' : '');
     } else {
       trEl.textContent = If <= iset ? 'No trip (' + ratio.toFixed(2) + 'x)' : '\u221e';
     }
@@ -227,9 +262,9 @@ export function updateTable(relays, tx, faultPct) {
       if (iset <= 0) return `<td style="color:var(--text-dim)">\u2014</td>`;
       const If = r.side === 'pri' ? priFault : secFault;
       const curve = CURVES[r.curveType] || CURVES.IEC_SI;
-      const t = tripTime(If, iset, r.tms, curve);
+      const t = effectiveTripTime(If, r, curve);
       let display;
-      if (isFinite(t) && t > 0) {
+      if (isFinite(t) && t >= 0) {
         display = `${t.toFixed(3)}s @ ${If.toFixed(0)}A`;
       } else if (If <= iset) {
         display = `No trip @ ${If.toFixed(0)}A`;

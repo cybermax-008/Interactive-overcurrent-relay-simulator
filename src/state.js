@@ -36,6 +36,9 @@ export function loadState() {
         if (r.tms === undefined) r.tms = d.tms;
         if (r.enabled === undefined) r.enabled = d.enabled;
         if (r.curveType === undefined || !CURVES[r.curveType]) r.curveType = d.curveType;
+        if (r.dtEnabled === undefined) r.dtEnabled = false;
+        if (r.dtPickupMul === undefined) r.dtPickupMul = 5.0;
+        if (r.dtDelay === undefined) r.dtDelay = 0;
       });
       if (s.reportSettings) state.reportSettings = { ...state.reportSettings, ...s.reportSettings };
       // Return remarks for synchronous restoration by caller

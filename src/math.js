@@ -34,3 +34,20 @@ export function getSecFault(tx, faultPct) {
 export function getRelayFault(relay, tx, faultPct) {
   return relay.side === 'pri' ? getPriFault(tx, faultPct) : getSecFault(tx, faultPct);
 }
+
+export function getDTPickup(r) {
+  return r.ctPri * r.dtPickupMul;
+}
+
+export function effectiveTripTime(If, r, curve) {
+  const iset = getIset(r);
+  const idmtTime = tripTime(If, iset, r.tms, curve);
+  if (r.dtEnabled) {
+    const dtPickup = getDTPickup(r);
+    if (If >= dtPickup) {
+      const dtTime = r.dtDelay;
+      return (isFinite(idmtTime) && idmtTime > 0) ? Math.min(idmtTime, dtTime) : dtTime;
+    }
+  }
+  return idmtTime;
+}

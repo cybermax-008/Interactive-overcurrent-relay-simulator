@@ -25,19 +25,17 @@ npm run build
 npm run preview
 ```
 
-The legacy `simulator.html` still works standalone (open directly in browser), but the primary codebase is now modular ES modules built with Vite.
+The codebase is modular ES modules built with Vite.
 
 ## Architecture
 
-**Modular ES modules + Vite.** The app was split from a single-file (`simulator.html`) into clean modules.
+**Modular ES modules + Vite.**
 
 ### File structure
 
 ```
 index.html              # Entry point HTML (Vite root)
-simulator.html          # Legacy standalone version (still functional)
 vite.config.js          # Vite config (build to dist/)
-netlify.toml            # Netlify deploy config + redirects
 src/
   main.js               # Entry point — init, event wiring, refresh loop
   constants.js           # Colors, defaults, IEC/IEEE constants, chart params, utilities
@@ -78,7 +76,7 @@ main.js       ← imports all, entry point
 
 ### Relay model
 
-Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multiplier, min 0.01), `tms` (time multiplier setting, 0.05-1.0), `curveType` (key into `CURVES` object, e.g. `'IEC_SI'`, `'IEEE_VI'`), `enabled`, `label`. Default 4 relays, supports 1-8 (MIN_RELAYS/MAX_RELAYS). Side is user-selectable per relay via dropdown. New relays added via `defaultRelay(index)` factory.
+Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multiplier, min 0.01), `tms` (time multiplier setting, 0.05-1.0), `curveType` (key into `CURVES` object, e.g. `'IEC_SI'`, `'IEEE_VI'`), `enabled`, `label`, `dtEnabled` (high-set DT toggle), `dtPickupMul` (DT pickup as CT primary multiple, 1.0-50), `dtDelay` (fixed DT delay in seconds, 0-1.0). Default 4 relays, supports 1-8 (MIN_RELAYS/MAX_RELAYS). Side is user-selectable per relay via dropdown. New relays added via `defaultRelay(index)` factory.
 
 ### Key conventions
 
@@ -92,7 +90,9 @@ Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multipli
 - Named constants in `constants.js` for all IEC/IEEE values and chart parameters
 - `CURVES` object in `constants.js` defines all curve types with `k`, `alpha`, `beta`, `label`, `short`, `standard`
 - `tripTime()` accepts an optional `curve` parameter (defaults to `CURVES.IEC_SI`)
+- `effectiveTripTime()` returns `min(IDMT, DT)` when DT is enabled and fault exceeds DT pickup
+- DT element drawn as dashed horizontal line on chart from DT pickup to right edge
 
 ### Current capabilities
 
-Single-page PWA simulator with: 1-8 configurable relays (dynamic add/remove) with per-relay side and IEC/IEEE curve selection (7 curve types), transformer parameter derivation, fault level slider (5-100%), live log-log chart with CTI brackets and tooltips (mouse + touch), results table at 10% intervals, coordination time interval display, custom labels, remarks field, report settings (company/project/doc ref), PDF export with B&W chart and CTI table, CSV export, URL-based state sharing, named study management (save/load/delete/import/export JSON), localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators, offline support via service worker, installable PWA.
+Single-page PWA simulator with: 1-8 configurable relays (dynamic add/remove) with per-relay side and IEC/IEEE curve selection (7 curve types), optional high-set definite time (DT) element per relay, transformer parameter derivation, fault level slider (5-100%), live log-log chart with DT lines, CTI brackets and tooltips (mouse + touch), results table at 10% intervals, coordination time interval display, custom labels, remarks field, report settings (company/project/doc ref), PDF export with B&W chart and CTI table, CSV export, URL-based state sharing, named study management (save/load/delete/import/export JSON), localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators, offline support via service worker, installable PWA.

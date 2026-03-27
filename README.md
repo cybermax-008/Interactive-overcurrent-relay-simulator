@@ -1,1 +1,1 @@
-https://quiet-dolphin-3ec328.netlify.app/simulator.html
+https://power-system-tool.vercel.app/

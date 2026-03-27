@@ -1,7 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "redirects": [
-    { "source": "/simulator.html", "destination": "/", "statusCode": 301 }
-  ]
+  "outputDirectory": "dist"
 }

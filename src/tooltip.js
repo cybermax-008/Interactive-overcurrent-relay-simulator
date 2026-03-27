@@ -1,5 +1,5 @@
 import { COLORS, CURVES, escapeHTML } from './constants.js';
-import { getIset, tripTime } from './math.js';
+import { getIset, effectiveTripTime } from './math.js';
 
 export function setupTooltip(canvas, tooltip, getState) {
   function onMouseMove(e) {
@@ -21,11 +21,12 @@ export function setupTooltip(canvas, tooltip, getState) {
       const iset = getIset(r);
       if (iset <= 0) return;
       const curve = CURVES[r.curveType] || CURVES.IEC_SI;
-      const t = tripTime(hI, iset, r.tms, curve);
+      const t = effectiveTripTime(hI, r, curve);
       const ratio = hI / iset;
       const name = escapeHTML(r.label || `R${i + 1}`);
-      if (isFinite(t) && t > 0) {
-        lines.push(`<span style="color:${COLORS[i]}">${name}: ${t.toFixed(3)}s (${ratio.toFixed(1)}x)</span>`);
+      if (isFinite(t) && t >= 0) {
+        const dtTag = r.dtEnabled && hI >= r.ctPri * r.dtPickupMul ? ' DT' : '';
+        lines.push(`<span style="color:${COLORS[i]}">${name}: ${t.toFixed(3)}s (${ratio.toFixed(1)}x)${dtTag}</span>`);
       } else if (hI <= iset) {
         lines.push(`<span style="color:${COLORS[i]}">${name}: Below pickup</span>`);
       }

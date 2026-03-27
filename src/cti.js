@@ -1,5 +1,5 @@
 import { CURVES } from './constants.js';
-import { getIset, getRelayFault, tripTime } from './math.js';
+import { getIset, getRelayFault, effectiveTripTime } from './math.js';
 
 export const CTI_GOOD = 0.3;
 export const CTI_WARNING = 0.2;
@@ -16,8 +16,8 @@ export function computeCTIPairs(relays, tx, faultPct) {
       if (iset <= 0) return;
       const If = getRelayFault(r, tx, faultPct);
       const curve = CURVES[r.curveType] || CURVES.IEC_SI;
-      const t = tripTime(If, iset, r.tms, curve);
-      if (!isFinite(t) || t <= 0) return;
+      const t = effectiveTripTime(If, r, curve);
+      if (!isFinite(t) || t < 0) return;
       entries.push({ idx: i, time: t, relay: r });
     });
 

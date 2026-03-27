@@ -10,6 +10,7 @@ function compressState(state, remarks) {
       c: r.ctPri, p: r.pickupMul, m: r.tms,
       e: r.enabled ? 1 : 0, l: r.label,
       s: r.side, k: r.curveType,
+      de: r.dtEnabled ? 1 : 0, dp: r.dtPickupMul, dd: r.dtDelay,
     })),
     n: remarks || '',
   };
@@ -25,6 +26,7 @@ function expandState(data) {
         ctPri: r.c, pickupMul: r.p, tms: r.m,
         enabled: !!r.e, label: r.l,
         side: r.s, curveType: CURVES[r.k] ? r.k : 'IEC_SI',
+        dtEnabled: !!r.de, dtPickupMul: r.dp || 5.0, dtDelay: r.dd || 0,
       })),
       remarks: data.n || '',
     };

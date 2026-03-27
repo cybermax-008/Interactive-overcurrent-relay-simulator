@@ -28,10 +28,10 @@ export const DEFAULTS = {
   tx: { mva: 10, priKV: 33, secKV: 11, zPct: 8 },
   faultPct: 100,
   relays: [
-    { ctPri: 200, pickupMul: 0.50, tms: 0.50, enabled: true, label: 'Primary OC1', side: 'pri', curveType: 'IEC_SI' },
-    { ctPri: 200, pickupMul: 0.80, tms: 0.30, enabled: true, label: 'Primary OC2', side: 'pri', curveType: 'IEC_SI' },
-    { ctPri: 600, pickupMul: 0.50, tms: 0.20, enabled: true, label: 'Secondary OC1', side: 'sec', curveType: 'IEC_SI' },
-    { ctPri: 600, pickupMul: 0.80, tms: 0.10, enabled: true, label: 'Secondary OC2', side: 'sec', curveType: 'IEC_SI' },
+    { ctPri: 200, pickupMul: 0.50, tms: 0.50, enabled: true, label: 'Primary OC1', side: 'pri', curveType: 'IEC_SI', dtEnabled: false, dtPickupMul: 5.0, dtDelay: 0 },
+    { ctPri: 200, pickupMul: 0.80, tms: 0.30, enabled: true, label: 'Primary OC2', side: 'pri', curveType: 'IEC_SI', dtEnabled: false, dtPickupMul: 5.0, dtDelay: 0 },
+    { ctPri: 600, pickupMul: 0.50, tms: 0.20, enabled: true, label: 'Secondary OC1', side: 'sec', curveType: 'IEC_SI', dtEnabled: false, dtPickupMul: 5.0, dtDelay: 0 },
+    { ctPri: 600, pickupMul: 0.80, tms: 0.10, enabled: true, label: 'Secondary OC2', side: 'sec', curveType: 'IEC_SI', dtEnabled: false, dtPickupMul: 5.0, dtDelay: 0 },
   ]
 };
 
@@ -43,6 +43,7 @@ export function defaultRelay(index) {
     ctPri: side === 'pri' ? 200 : 600,
     pickupMul: 0.50, tms: 0.30, enabled: true,
     label: `Relay ${index + 1}`, side, curveType: 'IEC_SI',
+    dtEnabled: false, dtPickupMul: 5.0, dtDelay: 0,
   };
 }
 
