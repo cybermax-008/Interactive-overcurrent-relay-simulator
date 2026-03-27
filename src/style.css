@@ -69,7 +69,7 @@
   @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
 
   /* ---- Controls ---- */
-  .controls-panel { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 40px); overflow-y: auto; }
+  .controls-panel { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 90px); overflow-y: auto; }
 
   .tx-card {
     background: var(--panel); border: 1px solid var(--panel-border);
@@ -347,6 +347,7 @@
   .studies-card {
     background: var(--panel); border: 1px solid var(--panel-border);
     border-radius: 10px; overflow: hidden;
+    border-left: 3px solid #3b82f6;
   }
   .studies-toggle {
     display: flex; align-items: center; gap: 6px; width: 100%;
@@ -389,6 +390,7 @@
   .overlays-card {
     background: var(--panel); border: 1px solid var(--panel-border);
     border-radius: 10px; overflow: hidden;
+    border-left: 3px solid #10b981;
   }
   .overlays-toggle {
     display: flex; align-items: center; gap: 6px; width: 100%;
