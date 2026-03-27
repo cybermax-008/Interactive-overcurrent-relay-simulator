@@ -119,11 +119,24 @@
 - **UI:** Checkbox toggle per relay card, shows DT Pickup Mul and DT Delay fields when enabled
 - Build output: 39.4 KB JS + 18.3 KB CSS (13.0 KB + 4.1 KB gzipped) — 14 modules
 
+### Sprint 7 — Coordination Overlay Curves
+- **New module `overlays.js`:** Pure math for 4 overlay types, imports only constants + math (acyclic)
+- **Cable damage** (BS 7671): `t = (kS/I)^2`, materials Cu/Al × PVC/XLPE, 19 standard sizes
+- **TX inrush** (IEEE C37.91): Decaying envelope 12× FLC, τ=0.2s, auto-derived from TX params
+- **TX through-fault withstand** (ANSI C57.109): `t = tBase × (Imax/I)^2`, frequent/infrequent
+- **MCB curves** (IEC 60898): Type B/C/D thermal + magnetic, 13 standard ratings
+- **Collapsible UI panel:** "Coordination Overlays" between TX params and relay cards
+- **Chart rendering:** Overlay curves drawn after relay curves, before fault lines, distinct colors + dash patterns
+- **Overlay styles:** cable=#ff6b6b, inrush=#ffd93d, withstand=#6bcb77, mcb=#4d96ff (distinct from relay colors)
+- **All consumers updated:** legend, tooltip, PDF export with overlay table, URL sharing v2, studies, state migration
+- Build output: 50.1 KB JS + 19.5 KB CSS (16.0 KB + 4.2 KB gzipped) — 15 modules
+
 ## Next steps
-1. **Sprint 7 — Advanced Features** (fuse/MCB TCC curves, cable damage curves, motor starting overlay)
+1. **Motor starting curve overlay** (Sprint 7.3 — starting current 6-8× FLC, locked rotor thermal limit)
+2. **Fuse TCC curves** (Sprint 7.1 — BS 88/IEC 60269, requires digitized lookup data)
 
 ## Gotchas / things to watch
-- `chart.js` is the largest module (~450 lines) — could be further decomposed later
+- `chart.js` is the largest module (~500 lines) — could be further decomposed later
 - `index.html` at root is the Vite entry point
 - `node_modules/` and `dist/` are gitignored — Vercel runs `npm install` + `npm run build`
 - PWA service worker auto-updates — users get new versions on next visit after deploy

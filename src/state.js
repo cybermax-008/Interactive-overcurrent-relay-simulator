@@ -1,4 +1,4 @@
-import { DEFAULTS, STORAGE_KEY, CURVES, MIN_RELAYS, MAX_RELAYS, defaultRelay } from './constants.js';
+import { DEFAULTS, STORAGE_KEY, CURVES, MIN_RELAYS, MAX_RELAYS, defaultRelay, DEFAULT_OVERLAYS } from './constants.js';
 
 // Mutable shared state
 export const state = {
@@ -6,12 +6,13 @@ export const state = {
   faultPct: 100,
   relays: [],
   reportSettings: { companyName: '', projectRef: '', docRef: '', revision: '' },
+  overlays: JSON.parse(JSON.stringify(DEFAULT_OVERLAYS)),
 };
 
 export function saveState() {
   try {
     const remarks = document.getElementById('remarksField').value;
-    const data = { tx: state.tx, faultPct: state.faultPct, relays: state.relays, remarks, reportSettings: state.reportSettings };
+    const data = { tx: state.tx, faultPct: state.faultPct, relays: state.relays, remarks, reportSettings: state.reportSettings, overlays: state.overlays };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (e) { /* silently fail */ }
 }
@@ -41,6 +42,15 @@ export function loadState() {
         if (r.dtDelay === undefined) r.dtDelay = 0;
       });
       if (s.reportSettings) state.reportSettings = { ...state.reportSettings, ...s.reportSettings };
+      // Overlay migration
+      const defOv = JSON.parse(JSON.stringify(DEFAULT_OVERLAYS));
+      state.overlays = s.overlays ? { ...defOv, ...s.overlays } : defOv;
+      for (const [key, def] of Object.entries(DEFAULT_OVERLAYS)) {
+        if (!state.overlays[key]) state.overlays[key] = { ...def };
+        for (const [prop, val] of Object.entries(def)) {
+          if (state.overlays[key][prop] === undefined) state.overlays[key][prop] = val;
+        }
+      }
       // Return remarks for synchronous restoration by caller
       return s.remarks || '';
     }
@@ -52,6 +62,7 @@ export function resetToDefaults() {
   state.tx = JSON.parse(JSON.stringify(DEFAULTS.tx));
   state.faultPct = DEFAULTS.faultPct;
   state.relays = JSON.parse(JSON.stringify(DEFAULTS.relays));
+  state.overlays = JSON.parse(JSON.stringify(DEFAULT_OVERLAYS));
   localStorage.removeItem(STORAGE_KEY);
   document.getElementById('remarksField').value = '';
 }

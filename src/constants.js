@@ -93,3 +93,46 @@ export const BW_DASH_NAMES = [
   'Solid ———', 'Dashed – – –', 'Dotted · · · ·', 'Dash-dot –·–·',
   'Short dash ‐ ‐ ‐', 'Dash-dot-dot –··–', 'Spaced dot ·  ·  ·', 'Long dash ——  ——',
 ];
+
+// ---- Overlay constants ----
+
+// Cable adiabatic damage (BS 7671 / IEC 60364-4-43)
+export const CABLE_K = { Cu_PVC: 115, Cu_XLPE: 143, Al_PVC: 76, Al_XLPE: 94 };
+export const CABLE_K_LABELS = {
+  Cu_PVC:  'Cu / PVC (k=115)',
+  Cu_XLPE: 'Cu / XLPE (k=143)',
+  Al_PVC:  'Al / PVC (k=76)',
+  Al_XLPE: 'Al / XLPE (k=94)',
+};
+export const CABLE_SIZES = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400, 500, 630];
+
+// Transformer inrush (IEEE C37.91)
+export const TX_INRUSH_PEAK = 12;
+export const TX_INRUSH_TAU = 0.2;
+
+// Transformer through-fault withstand (ANSI C57.109)
+export const TX_WITHSTAND_T_BASE = { infrequent: 2, frequent: 1 };
+
+// MCB curves (IEC 60898)
+export const MCB_TYPES = {
+  B: { magMin: 3, magMax: 5, label: 'Type B (3\u20135\u00d7)' },
+  C: { magMin: 5, magMax: 10, label: 'Type C (5\u201310\u00d7)' },
+  D: { magMin: 10, magMax: 20, label: 'Type D (10\u201320\u00d7)' },
+};
+export const MCB_RATINGS = [6, 10, 13, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125];
+export const MCB_THERMAL_K = 3970;
+
+// Overlay visual styles (distinct from relay COLORS)
+export const OVERLAY_STYLES = {
+  cable:       { color: '#ff6b6b', dash: [12, 4],       bwDash: [14, 6, 4, 6] },
+  txInrush:    { color: '#ffd93d', dash: [4, 4, 12, 4], bwDash: [6, 6, 18, 6] },
+  txWithstand: { color: '#6bcb77', dash: [8, 4],        bwDash: [10, 6] },
+  mcb:         { color: '#4d96ff', dash: [2, 4],        bwDash: [3, 6] },
+};
+
+export const DEFAULT_OVERLAYS = {
+  cable:       { enabled: false, material: 'Cu_PVC', size: 95, side: 'sec' },
+  txInrush:    { enabled: false },
+  txWithstand: { enabled: false, category: 'infrequent' },
+  mcb:         { enabled: false, type: 'B', rating: 32, side: 'sec' },
+};

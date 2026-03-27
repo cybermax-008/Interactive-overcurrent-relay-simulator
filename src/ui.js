@@ -1,4 +1,4 @@
-import { COLORS, CURVES, MAX_RELAYS, MIN_RELAYS, escapeHTML } from './constants.js';
+import { COLORS, CURVES, MAX_RELAYS, MIN_RELAYS, escapeHTML, OVERLAY_STYLES } from './constants.js';
 import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault, getDTPickup, effectiveTripTime } from './math.js';
 
 function curveOptions(selected) {
@@ -155,8 +155,8 @@ export function buildCards(container, relays, onRefresh, onDebouncedRefresh, onA
 
 // ---- Legend builder ----
 
-export function buildLegend(relays) {
-  document.getElementById('legend').innerHTML = relays.map((r, i) => {
+export function buildLegend(relays, overlays) {
+  let html = relays.map((r, i) => {
     const name = r.label || `R${i + 1}`;
     const curve = CURVES[r.curveType] || CURVES.IEC_SI;
     return `<span class="leg-item" style="opacity:${r.enabled ? 1 : 0.3}">
@@ -164,6 +164,19 @@ export function buildLegend(relays) {
       ${escapeHTML(name)} [${curve.short}]
     </span>`;
   }).join('');
+
+  if (overlays) {
+    const items = [];
+    if (overlays.cable?.enabled)       items.push({ color: OVERLAY_STYLES.cable.color,       label: `Cable ${overlays.cable.size}mm\u00b2` });
+    if (overlays.txInrush?.enabled)    items.push({ color: OVERLAY_STYLES.txInrush.color,    label: 'TX Inrush' });
+    if (overlays.txWithstand?.enabled) items.push({ color: OVERLAY_STYLES.txWithstand.color, label: 'TX Withstand' });
+    if (overlays.mcb?.enabled)         items.push({ color: OVERLAY_STYLES.mcb.color,         label: `MCB ${overlays.mcb.type}${overlays.mcb.rating}` });
+    html += items.map(it =>
+      `<span class="leg-item"><span class="leg-dot" style="background:${it.color};border-radius:0;height:2px;"></span>${escapeHTML(it.label)}</span>`
+    ).join('');
+  }
+
+  document.getElementById('legend').innerHTML = html;
 }
 
 // ---- Transformer display update ----

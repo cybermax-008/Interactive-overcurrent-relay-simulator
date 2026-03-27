@@ -1,9 +1,9 @@
-import { CURVES } from './constants.js';
+import { CURVES, DEFAULT_OVERLAYS } from './constants.js';
 
 // Compact keys to keep URLs short
 function compressState(state, remarks) {
-  return {
-    v: 1,
+  const data = {
+    v: 2,
     t: state.tx,
     f: state.faultPct,
     r: state.relays.map(r => ({
@@ -14,12 +14,22 @@ function compressState(state, remarks) {
     })),
     n: remarks || '',
   };
+  // Only include overlays if any enabled
+  const ov = state.overlays;
+  if (ov && (ov.cable?.enabled || ov.txInrush?.enabled || ov.txWithstand?.enabled || ov.mcb?.enabled)) {
+    data.o = {};
+    if (ov.cable?.enabled) data.o.c = { m: ov.cable.material, z: ov.cable.size, s: ov.cable.side };
+    if (ov.txInrush?.enabled) data.o.i = 1;
+    if (ov.txWithstand?.enabled) data.o.w = { c: ov.txWithstand.category };
+    if (ov.mcb?.enabled) data.o.b = { t: ov.mcb.type, r: ov.mcb.rating, s: ov.mcb.side };
+  }
+  return data;
 }
 
 function expandState(data) {
-  if (!data || data.v !== 1) return null;
+  if (!data || (data.v !== 1 && data.v !== 2)) return null;
   try {
-    return {
+    const result = {
       tx: data.t,
       faultPct: data.f,
       relays: data.r.map(r => ({
@@ -30,6 +40,14 @@ function expandState(data) {
       })),
       remarks: data.n || '',
     };
+    if (data.v >= 2 && data.o) {
+      result.overlays = JSON.parse(JSON.stringify(DEFAULT_OVERLAYS));
+      if (data.o.c) result.overlays.cable = { enabled: true, material: data.o.c.m, size: data.o.c.z, side: data.o.c.s };
+      if (data.o.i) result.overlays.txInrush = { enabled: true };
+      if (data.o.w) result.overlays.txWithstand = { enabled: true, category: data.o.w.c };
+      if (data.o.b) result.overlays.mcb = { enabled: true, type: data.o.b.t, rating: data.o.b.r, side: data.o.b.s };
+    }
+    return result;
   } catch { return null; }
 }
 

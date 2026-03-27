@@ -1,6 +1,6 @@
 import './style.css';
 
-import { debounce, DEFAULTS } from './constants.js';
+import { debounce, DEFAULTS, CABLE_K_LABELS, CABLE_SIZES, MCB_RATINGS } from './constants.js';
 import { state, loadState, saveState, resetToDefaults, populateTxInputs, addRelay, removeRelay } from './state.js';
 import { drawChart } from './chart.js';
 import { buildCards, buildLegend, updateTxDisplay, updateResults, updateTable, updateCTISummary } from './ui.js';
@@ -22,12 +22,12 @@ let lastCTIPairs = [];
 
 function refresh() {
   updateTxDisplay(state.tx, state.faultPct);
-  buildLegend(state.relays);
+  buildLegend(state.relays, state.overlays);
   updateResults(state.relays, state.tx, state.faultPct);
   updateTable(state.relays, state.tx, state.faultPct);
   lastCTIPairs = computeCTIPairs(state.relays, state.tx, state.faultPct);
   updateCTISummary(lastCTIPairs, state.relays);
-  drawChart(canvas, state.relays, state.tx, state.faultPct, lastCTIPairs);
+  drawChart(canvas, state.relays, state.tx, state.faultPct, lastCTIPairs, state.overlays);
   saveState();
 }
 
@@ -45,7 +45,7 @@ function handleAddRelay() {
 function handleRemoveRelay(index) {
   if (removeRelay(index)) rebuildAndRefresh();
 }
-const debouncedDrawChart = debounce(() => drawChart(canvas, state.relays, state.tx, state.faultPct, lastCTIPairs), 100);
+const debouncedDrawChart = debounce(() => drawChart(canvas, state.relays, state.tx, state.faultPct, lastCTIPairs, state.overlays), 100);
 
 // ---- Initialize state ----
 
@@ -57,6 +57,7 @@ if (urlState) {
   state.tx = urlState.tx;
   state.faultPct = urlState.faultPct;
   state.relays = urlState.relays;
+  if (urlState.overlays) state.overlays = urlState.overlays;
   _savedRemarks = urlState.remarks;
   clearURLState();
 } else {
@@ -106,6 +107,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   if (confirm('Reset all values to defaults?')) {
     resetToDefaults();
     populateTxInputs();
+    populateOverlayInputs();
     rebuildAndRefresh();
   }
 });
@@ -113,7 +115,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 // ---- Export button ----
 
 document.getElementById('exportBtn').addEventListener('click', () => {
-  exportPDF(state.tx, state.faultPct, state.relays, lastCTIPairs, state.reportSettings);
+  exportPDF(state.tx, state.faultPct, state.relays, lastCTIPairs, state.reportSettings, state.overlays);
 });
 
 document.getElementById('csvBtn').addEventListener('click', () => {
@@ -186,7 +188,9 @@ function renderStudiesList() {
       state.tx = data.tx;
       state.faultPct = data.faultPct;
       state.relays = data.relays;
+      if (data.overlays) state.overlays = data.overlays;
       populateTxInputs();
+      populateOverlayInputs();
       if (data.remarks) document.getElementById('remarksField').value = data.remarks;
       rebuildAndRefresh();
     });
@@ -235,6 +239,76 @@ document.getElementById('studyFileInput').addEventListener('change', async (e) =
   }
   e.target.value = '';
 });
+
+// ---- Overlays panel ----
+
+function populateOverlayInputs() {
+  const ov = state.overlays;
+  // Cable material select
+  const matSel = document.getElementById('ovCableMat');
+  matSel.innerHTML = Object.entries(CABLE_K_LABELS).map(([k, v]) =>
+    `<option value="${k}"${k === ov.cable.material ? ' selected' : ''}>${v}</option>`
+  ).join('');
+  // Cable size select
+  const sizeSel = document.getElementById('ovCableSize');
+  sizeSel.innerHTML = CABLE_SIZES.map(s =>
+    `<option value="${s}"${s === ov.cable.size ? ' selected' : ''}>${s}</option>`
+  ).join('');
+  // MCB rating select
+  const ratSel = document.getElementById('ovMcbRating');
+  ratSel.innerHTML = MCB_RATINGS.map(r =>
+    `<option value="${r}"${r === ov.mcb.rating ? ' selected' : ''}>${r}A</option>`
+  ).join('');
+  // Checkboxes
+  document.getElementById('ovCableEn').checked = ov.cable.enabled;
+  document.getElementById('ovInrushEn').checked = ov.txInrush.enabled;
+  document.getElementById('ovWithstandEn').checked = ov.txWithstand.enabled;
+  document.getElementById('ovMcbEn').checked = ov.mcb.enabled;
+  // Show/hide fields
+  document.getElementById('ovCableFields').style.display = ov.cable.enabled ? 'grid' : 'none';
+  document.getElementById('ovInrushFields').style.display = ov.txInrush.enabled ? 'block' : 'none';
+  document.getElementById('ovWithstandFields').style.display = ov.txWithstand.enabled ? 'grid' : 'none';
+  document.getElementById('ovMcbFields').style.display = ov.mcb.enabled ? 'grid' : 'none';
+  // Select values
+  document.getElementById('ovCableSide').value = ov.cable.side;
+  document.getElementById('ovWithstandCat').value = ov.txWithstand.category;
+  document.getElementById('ovMcbType').value = ov.mcb.type;
+  document.getElementById('ovMcbSide').value = ov.mcb.side;
+}
+
+populateOverlayInputs();
+
+document.getElementById('overlaysToggle').addEventListener('click', () => {
+  const body = document.getElementById('overlaysBody');
+  const arrow = document.getElementById('overlaysArrow');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  arrow.classList.toggle('open', open);
+});
+
+// Enable toggles
+const ovEnMap = {
+  ovCableEn:     { key: 'cable',      fieldsId: 'ovCableFields',     display: 'grid' },
+  ovInrushEn:    { key: 'txInrush',   fieldsId: 'ovInrushFields',    display: 'block' },
+  ovWithstandEn: { key: 'txWithstand', fieldsId: 'ovWithstandFields', display: 'grid' },
+  ovMcbEn:       { key: 'mcb',        fieldsId: 'ovMcbFields',       display: 'grid' },
+};
+Object.entries(ovEnMap).forEach(([elId, cfg]) => {
+  document.getElementById(elId).addEventListener('change', e => {
+    state.overlays[cfg.key].enabled = e.target.checked;
+    document.getElementById(cfg.fieldsId).style.display = e.target.checked ? cfg.display : 'none';
+    refresh();
+  });
+});
+
+// Parameter selects
+document.getElementById('ovCableMat').addEventListener('change', e => { state.overlays.cable.material = e.target.value; refresh(); });
+document.getElementById('ovCableSize').addEventListener('change', e => { state.overlays.cable.size = parseFloat(e.target.value); refresh(); });
+document.getElementById('ovCableSide').addEventListener('change', e => { state.overlays.cable.side = e.target.value; refresh(); });
+document.getElementById('ovWithstandCat').addEventListener('change', e => { state.overlays.txWithstand.category = e.target.value; refresh(); });
+document.getElementById('ovMcbType').addEventListener('change', e => { state.overlays.mcb.type = e.target.value; refresh(); });
+document.getElementById('ovMcbRating').addEventListener('change', e => { state.overlays.mcb.rating = parseInt(e.target.value); refresh(); });
+document.getElementById('ovMcbSide').addEventListener('change', e => { state.overlays.mcb.side = e.target.value; refresh(); });
 
 // ---- Resize handler ----
 

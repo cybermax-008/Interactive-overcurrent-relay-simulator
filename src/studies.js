@@ -30,6 +30,7 @@ export function saveStudy(name, state, remarks) {
       faultPct: state.faultPct,
       relays: state.relays,
       remarks: remarks || '',
+      overlays: state.overlays,
     },
   };
   studies.unshift(study);

@@ -1,5 +1,5 @@
-import { COLORS, CURVES, escapeHTML } from './constants.js';
-import { getIset, effectiveTripTime } from './math.js';
+import { COLORS, CURVES, escapeHTML, OVERLAY_STYLES, CABLE_K, MCB_TYPES, MCB_THERMAL_K, TX_INRUSH_PEAK, TX_INRUSH_TAU } from './constants.js';
+import { getIset, effectiveTripTime, calcFaultCurrent } from './math.js';
 
 export function setupTooltip(canvas, tooltip, getState) {
   function onMouseMove(e) {
@@ -31,6 +31,47 @@ export function setupTooltip(canvas, tooltip, getState) {
         lines.push(`<span style="color:${COLORS[i]}">${name}: Below pickup</span>`);
       }
     });
+    // Overlay values
+    const overlays = p.overlays;
+    if (overlays) {
+      if (overlays.cable?.enabled) {
+        const k = CABLE_K[overlays.cable.material] || 115;
+        const t = Math.pow((k * overlays.cable.size) / hI, 2);
+        if (isFinite(t) && t > 0 && t < 1e6) lines.push(`<span style="color:${OVERLAY_STYLES.cable.color}">Cable: ${t.toFixed(3)}s</span>`);
+      }
+      if (overlays.txInrush?.enabled) {
+        const { relays: _r, tx } = getState();
+        const flc = (tx.mva * 1000) / (tx.secKV * Math.sqrt(3));
+        const ratio = (hI / flc - 1) / (TX_INRUSH_PEAK - 1);
+        if (ratio > 0 && ratio < 1) {
+          const t = -TX_INRUSH_TAU * Math.log(ratio);
+          if (t > 0) lines.push(`<span style="color:${OVERLAY_STYLES.txInrush.color}">Inrush: ${t.toFixed(3)}s</span>`);
+        }
+      }
+      if (overlays.txWithstand?.enabled) {
+        const { relays: _r, tx } = getState();
+        const Imax = calcFaultCurrent(tx.mva, tx.secKV, tx.zPct);
+        if (hI <= Imax && hI > 0) {
+          const tBase = overlays.txWithstand.category === 'frequent' ? 1 : 2;
+          const t = tBase * Math.pow(Imax / hI, 2);
+          if (isFinite(t) && t > 0 && t < 1e6) lines.push(`<span style="color:${OVERLAY_STYLES.txWithstand.color}">Withstand: ${t.toFixed(3)}s</span>`);
+        }
+      }
+      if (overlays.mcb?.enabled) {
+        const mcb = MCB_TYPES[overlays.mcb.type];
+        const In = overlays.mcb.rating;
+        const mul = hI / In;
+        if (mul >= mcb.magMax) {
+          lines.push(`<span style="color:${OVERLAY_STYLES.mcb.color}">MCB: Instant</span>`);
+        } else if (mul >= mcb.magMin) {
+          lines.push(`<span style="color:${OVERLAY_STYLES.mcb.color}">MCB: \u22640.1s</span>`);
+        } else if (mul > 1.13) {
+          const t = MCB_THERMAL_K / (mul * mul);
+          lines.push(`<span style="color:${OVERLAY_STYLES.mcb.color}">MCB: ${t.toFixed(1)}s</span>`);
+        }
+      }
+    }
+
     tooltip.innerHTML = lines.join('<br>');
     tooltip.style.display = 'block';
     tooltip.style.left = Math.min(mx + 15, rect.width - 260) + 'px';

@@ -1,11 +1,16 @@
 import {
-  COLORS, CURVES, BW_DASH,
+  COLORS, CURVES, BW_DASH, OVERLAY_STYLES,
   CURVE_SAMPLE_STEP, CURVE_START_FACTOR,
   LOG_PAD_X, LOG_PAD_Y,
   DEFAULT_X_RANGE, DEFAULT_Y_RANGE,
   MAX_SAMPLE_MUL, SAMPLE_MUL_STEP,
 } from './constants.js';
 import { getIset, getRelayFault, tripTime, getPriFault, getSecFault, getDTPickup, effectiveTripTime } from './math.js';
+import {
+  computeCableDamageCurve, computeTxInrushCurve,
+  computeTxWithstandCurve, computeMCBCurve,
+  computeOverlayAxisContributions,
+} from './overlays.js';
 
 // ---- Theme definitions ----
 
@@ -51,7 +56,7 @@ export const PRINT_THEME = {
 
 // ---- Shared axis-range computation ----
 
-export function computeAxisRanges(relays, tx, faultPct) {
+export function computeAxisRanges(relays, tx, faultPct, overlays) {
   let dataXMin = Infinity, dataXMax = 0, dataYMin = Infinity, dataYMax = 0;
 
   relays.forEach((r, i) => {
@@ -95,6 +100,15 @@ export function computeAxisRanges(relays, tx, faultPct) {
     }
   });
 
+  // Expand for overlays
+  if (overlays) {
+    const oc = computeOverlayAxisContributions(overlays, tx);
+    if (isFinite(oc.xMin) && oc.xMin > 0 && oc.xMin < dataXMin) dataXMin = oc.xMin;
+    if (isFinite(oc.xMax) && oc.xMax > 0 && oc.xMax > dataXMax) dataXMax = oc.xMax;
+    if (isFinite(oc.yMin) && oc.yMin > 0 && oc.yMin < dataYMin) dataYMin = oc.yMin;
+    if (isFinite(oc.yMax) && oc.yMax > 0 && oc.yMax > dataYMax) dataYMax = oc.yMax;
+  }
+
   // Fallback defaults if no active curves
   if (!isFinite(dataXMin) || dataXMin <= 0) dataXMin = DEFAULT_X_RANGE[0];
   if (!isFinite(dataXMax) || dataXMax <= 0) dataXMax = DEFAULT_X_RANGE[1];
@@ -130,7 +144,7 @@ export function logTicks(min, max) {
 
 const CTI_COLORS = { good: '#10b981', warning: '#f59e0b', danger: '#ef4444' };
 
-export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
+export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs, overlays }) {
   const isScreen = theme.mode === 'screen';
   const pad = theme.pad;
   let W, H, c;
@@ -163,7 +177,7 @@ export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
   }
 
   // Compute axis ranges
-  const { xMin, xMax, yMin, yMax } = computeAxisRanges(relays, tx, faultPct);
+  const { xMin, xMax, yMin, yMax } = computeAxisRanges(relays, tx, faultPct, overlays);
 
   // Mapping functions
   const lx = v => Math.log10(v);
@@ -334,6 +348,72 @@ export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
     c.setLineDash([]);
   });
 
+  // Overlay curves
+  if (overlays) {
+    const drawOverlayPoints = (points, key, label) => {
+      if (!points.length) return;
+      const style = OVERLAY_STYLES[key];
+      const color = theme.curveColor || style.color;
+      c.strokeStyle = color;
+      c.lineWidth = theme.curveWidth * 0.8;
+      c.setLineDash(theme.mode === 'print' ? style.bwDash : style.dash);
+      c.beginPath();
+      let first = true;
+      for (const { I, t } of points) {
+        if (t < yMin || t > yMax || I < xMin || I > xMax) continue;
+        const x = mapX(I), y = mapY(t);
+        if (first) { c.moveTo(x, y); first = false; } else c.lineTo(x, y);
+      }
+      c.stroke();
+      c.setLineDash([]);
+      // Label at midpoint
+      if (points.length >= 2) {
+        const mid = points[Math.floor(points.length * 0.4)];
+        if (mid && mid.I >= xMin && mid.I <= xMax && mid.t >= yMin && mid.t <= yMax) {
+          c.fillStyle = color;
+          c.font = isScreen ? 'bold 9px JetBrains Mono' : 'bold 20px sans-serif';
+          c.textAlign = 'left';
+          c.fillText(label, mapX(mid.I) + (isScreen ? 4 : 8), mapY(mid.t) - (isScreen ? 6 : 12));
+        }
+      }
+    };
+
+    if (overlays.cable?.enabled) {
+      const pts = computeCableDamageCurve(overlays.cable.material, overlays.cable.size, xMin, xMax);
+      drawOverlayPoints(pts, 'cable', `Cable ${overlays.cable.size}mm\u00b2`);
+    }
+    if (overlays.txInrush?.enabled) {
+      const pts = computeTxInrushCurve(tx, xMin, xMax);
+      drawOverlayPoints(pts, 'txInrush', 'TX Inrush');
+    }
+    if (overlays.txWithstand?.enabled) {
+      const pts = computeTxWithstandCurve(tx, overlays.txWithstand.category, xMin, xMax);
+      drawOverlayPoints(pts, 'txWithstand', 'TX Withstand');
+    }
+    if (overlays.mcb?.enabled) {
+      const { thermalPoints, magneticPoints } = computeMCBCurve(overlays.mcb.type, overlays.mcb.rating, xMin, xMax);
+      drawOverlayPoints(thermalPoints, 'mcb', `MCB ${overlays.mcb.type}${overlays.mcb.rating}`);
+      // Draw magnetic region as connected line segments
+      if (magneticPoints.length >= 2) {
+        const style = OVERLAY_STYLES.mcb;
+        const color = theme.curveColor || style.color;
+        c.strokeStyle = color;
+        c.lineWidth = theme.curveWidth * 0.8;
+        c.setLineDash(theme.mode === 'print' ? style.bwDash : style.dash);
+        c.beginPath();
+        let first = true;
+        for (const { I, t } of magneticPoints) {
+          const ct = Math.max(t, yMin);
+          if (I < xMin || I > xMax) continue;
+          const x = mapX(I), y = mapY(ct);
+          if (first) { c.moveTo(x, y); first = false; } else c.lineTo(x, y);
+        }
+        c.stroke();
+        c.setLineDash([]);
+      }
+    }
+  }
+
   // Fault current vertical lines
   const priFault = getPriFault(tx, faultPct);
   const secFault = getSecFault(tx, faultPct);
@@ -469,7 +549,7 @@ export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
 
   // Store coordinate system on canvas for tooltip use (screen mode only)
   if (isScreen) {
-    canvas._cp = { pad, cw, ch, xMin, xMax, yMin, yMax, mapX, mapY };
+    canvas._cp = { pad, cw, ch, xMin, xMax, yMin, yMax, mapX, mapY, overlays };
   }
 
   // For print mode, return data URL
@@ -480,13 +560,13 @@ export function renderChart(canvas, { relays, tx, faultPct, theme, ctiPairs }) {
 
 // ---- Convenience wrappers ----
 
-export function drawChart(canvas, relays, tx, faultPct, ctiPairs) {
-  renderChart(canvas, { relays, tx, faultPct, theme: SCREEN_THEME, ctiPairs });
+export function drawChart(canvas, relays, tx, faultPct, ctiPairs, overlays) {
+  renderChart(canvas, { relays, tx, faultPct, theme: SCREEN_THEME, ctiPairs, overlays });
 }
 
-export function renderBWChart(W, H, relays, tx, faultPct, ctiPairs) {
+export function renderBWChart(W, H, relays, tx, faultPct, ctiPairs, overlays) {
   const bwc = document.createElement('canvas');
   bwc.width = W;
   bwc.height = H;
-  return renderChart(bwc, { relays, tx, faultPct, theme: PRINT_THEME, ctiPairs });
+  return renderChart(bwc, { relays, tx, faultPct, theme: PRINT_THEME, ctiPairs, overlays });
 }

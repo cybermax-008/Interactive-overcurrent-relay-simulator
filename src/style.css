@@ -385,6 +385,39 @@
   }
   .study-del:hover { color: #ef4444; }
 
+  /* ---- Overlays panel ---- */
+  .overlays-card {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .overlays-toggle {
+    display: flex; align-items: center; gap: 6px; width: 100%;
+    padding: 10px 14px; background: none; border: none; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
+    transition: color 0.2s;
+  }
+  .overlays-toggle:hover { color: var(--text); }
+  .overlays-arrow { margin-left: auto; font-size: 0.7rem; transition: transform 0.2s; }
+  .overlays-arrow.open { transform: rotate(90deg); }
+  .overlays-body { padding: 0 14px 12px; }
+  .overlay-section { padding: 8px 0; border-bottom: 1px solid var(--panel-border); }
+  .overlay-section:last-child { border-bottom: none; }
+  .overlay-enable {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+    color: var(--text); cursor: pointer;
+  }
+  .overlay-enable input[type="checkbox"] { accent-color: var(--accent); }
+  .overlay-fields {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 6px 8px; margin-top: 8px;
+  }
+  .overlay-auto-note {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+    color: var(--text-dim); font-style: italic; grid-column: 1 / -1;
+  }
+
   .canvas-wrap { position: relative; width: 100%; padding-bottom: 62.5%; min-width: 0; overflow: hidden; }
   @supports (aspect-ratio: 16/10) {
     .canvas-wrap { padding-bottom: 0; aspect-ratio: 16 / 10; }

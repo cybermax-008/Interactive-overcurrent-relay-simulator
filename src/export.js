@@ -1,8 +1,8 @@
-import { escapeHTML, CURVES, BW_DASH_NAMES, EXPORT_CHART_W, EXPORT_CHART_H } from './constants.js';
+import { escapeHTML, CURVES, BW_DASH_NAMES, EXPORT_CHART_W, EXPORT_CHART_H, CABLE_K_LABELS } from './constants.js';
 import { getIset, getRelayFault, tripTime, getPriFault100, getSecFault100, getPriFault, getSecFault, getDTPickup, effectiveTripTime } from './math.js';
 import { renderBWChart } from './chart.js';
 
-export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
+export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings, overlays) {
   const now = new Date();
   const rs = reportSettings || {};
   const active = relays.map((r, i) => ({ r, i })).filter(x => x.r.enabled);
@@ -14,7 +14,7 @@ export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
   const remarks = document.getElementById('remarksField').value.trim();
 
   // Render B&W chart on a high-res offscreen canvas
-  const chartImg = renderBWChart(EXPORT_CHART_W, EXPORT_CHART_H, relays, tx, faultPct, ctiPairs);
+  const chartImg = renderBWChart(EXPORT_CHART_W, EXPORT_CHART_H, relays, tx, faultPct, ctiPairs, overlays);
 
   // Relay settings rows
   const settingsRows = active.map(({ r, i }) => {
@@ -143,6 +143,15 @@ export function exportPDF(tx, faultPct, relays, ctiPairs, reportSettings) {
       return `<tr><td>${priName}</td><td>${bkpName}</td><td>${p.side === 'pri' ? 'Primary' : 'Secondary'}</td><td>${p.primaryTime.toFixed(3)}s</td><td>${p.backupTime.toFixed(3)}s</td><td style="font-weight:700">${p.cti.toFixed(3)}s</td><td style="font-weight:700;${p.status === 'danger' ? 'color:red' : ''}">${statusLabel}</td></tr>`;
     }).join('')}</tbody>
   </table>` : ''}
+
+  ${(() => {
+    const rows = [];
+    if (overlays?.cable?.enabled) rows.push(`<tr><td>Cable Damage</td><td>${CABLE_K_LABELS[overlays.cable.material] || overlays.cable.material}</td><td>${overlays.cable.size} mm\u00b2</td><td>t = (kS/I)\u00b2</td></tr>`);
+    if (overlays?.txInrush?.enabled) rows.push(`<tr><td>TX Inrush</td><td colspan="2">12\u00d7 FLC, \u03c4=0.2s</td><td>Decaying envelope</td></tr>`);
+    if (overlays?.txWithstand?.enabled) rows.push(`<tr><td>TX Withstand</td><td colspan="2">${overlays.txWithstand.category} (t<sub>base</sub>=${overlays.txWithstand.category === 'frequent' ? '1' : '2'}s)</td><td>t = t<sub>base</sub> \u00d7 (I<sub>max</sub>/I)\u00b2</td></tr>`);
+    if (overlays?.mcb?.enabled) rows.push(`<tr><td>MCB</td><td>Type ${overlays.mcb.type}</td><td>${overlays.mcb.rating}A</td><td>Thermal + Magnetic</td></tr>`);
+    return rows.length ? `<h2>Overlay Curves</h2><table><thead><tr><th>Type</th><th>Parameters</th><th>Rating</th><th>Formula</th></tr></thead><tbody>${rows.join('')}</tbody></table>` : '';
+  })()}
 
   ${remarks ? `<h2>Remarks</h2><div class="remarks">${escapeHTML(remarks).replace(/\n/g, '<br>')}</div>` : ''}
 
