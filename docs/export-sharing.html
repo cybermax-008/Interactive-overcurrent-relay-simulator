@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Export PDF reports, download CSV data, share relay configurations via URL, and manage named studies in the IDMT Overcurrent Relay Simulator.">
+<meta name="description" content="Export PDF reports, download CSV data, share relay configurations via URL, and use offline PWA features in the IDMT Overcurrent Relay Simulator.">
 <meta name="theme-color" content="#0a0e17">
 <meta property="og:title" content="Export &amp; Sharing — IDMT Overcurrent Relay Simulator">
-<meta property="og:description" content="PDF export, CSV download, URL sharing, named studies, report settings, and offline PWA usage for the overcurrent relay simulator.">
+<meta property="og:description" content="PDF export, CSV download, URL sharing, report settings, and offline PWA usage for the overcurrent relay simulator.">
 <meta property="og:url" content="https://power-system-tool.vercel.app/docs/export-sharing.html">
 <meta property="og:type" content="article">
 <meta name="twitter:card" content="summary_large_image">
@@ -21,7 +21,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Export & Sharing — IDMT Overcurrent Relay Simulator",
-  "description": "PDF export, CSV download, URL sharing, named studies, report settings, and offline PWA usage for the overcurrent relay simulator.",
+  "description": "PDF export, CSV download, URL sharing, report settings, and offline PWA usage for the overcurrent relay simulator.",
   "url": "https://power-system-tool.vercel.app/docs/export-sharing.html",
   "author": {
     "@type": "Organization",
@@ -91,20 +91,6 @@
 
     <p>After loading a shared URL, the configuration parameter is automatically cleaned from the browser address bar to keep the URL tidy.</p>
 
-    <h2>Named Studies</h2>
-
-    <p>Save your relay configurations as named studies for quick retrieval later:</p>
-
-    <ul>
-      <li><strong>Save:</strong> Click "Save Current" in the Studies panel and enter a descriptive name for the study</li>
-      <li><strong>Load:</strong> Click a study name in the list to restore that full configuration</li>
-      <li><strong>Delete:</strong> Click the X button next to a study to remove it</li>
-      <li><strong>Export:</strong> Click "Export All" to download every saved study as a single JSON file</li>
-      <li><strong>Import:</strong> Click "Import JSON" to load studies from a previously exported file -- useful for backups or sharing multiple configurations between machines</li>
-    </ul>
-
-    <p>Studies are stored in your browser's local storage. They persist across sessions but are specific to the browser and device you are using. Use Export/Import to transfer studies between devices.</p>
-
     <h2>Report Settings</h2>
 
     <p>The Report Settings section provides optional fields that appear in the header of PDF exports:</p>
@@ -116,7 +102,7 @@
       <li><strong>Revision</strong></li>
     </ul>
 
-    <p>Fill these fields in before exporting to generate professional reports with proper document identification. These values are also saved as part of your study configuration when using Named Studies or URL Sharing.</p>
+    <p>Fill these fields in before exporting to generate professional reports with proper document identification. These values are persisted in local storage and included when sharing via URL.</p>
 
     <h2>Offline Use (PWA)</h2>
 

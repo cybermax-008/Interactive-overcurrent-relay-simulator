@@ -52,7 +52,6 @@ src/
   cti.js                 # Coordination time interval computation
   overlays.js            # Coordination overlay curves (cable, TX inrush/withstand, MCB)
   sharing.js             # URL-based state encoding/decoding for sharing
-  studies.js             # Named study management (save/load/delete/import/export)
   style.css              # All CSS (dark theme, responsive, print styles)
 ```
 
@@ -101,4 +100,4 @@ Each relay: `side` (pri/sec), `ctPri` (CT primary), `pickupMul` (pickup multipli
 
 ### Current capabilities
 
-Single-page PWA simulator with: 1-8 configurable relays (dynamic add/remove) with per-relay side and IEC/IEEE curve selection (7 curve types), optional high-set definite time (DT) element per relay, coordination overlay curves (cable damage BS 7671, TX inrush IEEE C37.91, TX through-fault withstand ANSI C57.109, MCB curves IEC 60898 B/C/D), transformer parameter derivation, fault level slider (5-100%), live log-log chart with DT lines, overlay curves, CTI brackets and tooltips (mouse + touch), results table at 10% intervals, coordination time interval display, custom labels, remarks field, report settings (company/project/doc ref), PDF export with B&W chart, overlay table, and CTI table, CSV export, URL-based state sharing (v2 with overlay support), named study management (save/load/delete/import/export JSON), localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators, offline support via service worker, installable PWA.
+Single-page PWA simulator with: 1-8 configurable relays (dynamic add/remove) with per-relay side and IEC/IEEE curve selection (7 curve types), optional high-set definite time (DT) element per relay, coordination overlay curves (cable damage BS 7671, TX inrush IEEE C37.91, TX through-fault withstand ANSI C57.109, MCB curves IEC 60898 B/C/D), transformer parameter derivation, fault level slider (5-100%), live log-log chart with DT lines, overlay curves, CTI brackets and tooltips (mouse + touch), results table at 10% intervals, coordination time interval display, custom labels, remarks field, report settings (company/project/doc ref), PDF export with B&W chart, overlay table, and CTI table, CSV export, URL-based state sharing (v2 with overlay support), localStorage persistence, reset to defaults, kV mismatch warning, input validation with clamping, debounced updates, mobile-responsive layout, ARIA accessibility, keyboard focus indicators, offline support via service worker, installable PWA.
