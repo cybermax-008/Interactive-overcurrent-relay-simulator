@@ -8,7 +8,6 @@ import { exportPDF, exportCSV } from './export.js';
 import { setupTooltip } from './tooltip.js';
 import { computeCTIPairs } from './cti.js';
 import { getURLState, clearURLState, generateShareURL } from './sharing.js';
-import { listStudies, saveStudy, loadStudy, deleteStudy, exportAllStudiesJSON, importStudiesJSON } from './studies.js';
 
 // ---- DOM references ----
 
@@ -161,49 +160,6 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('visible'), 2000);
 }
 
-// ---- Studies ----
-
-function renderStudiesList() {
-  const studies = listStudies();
-  const countEl = document.getElementById('studiesCount');
-  countEl.textContent = studies.length ? `(${studies.length})` : '';
-  const listEl = document.getElementById('studiesList');
-  if (!studies.length) {
-    listEl.innerHTML = '<div style="color:var(--text-dim);font-size:0.6rem;padding:4px;">No saved studies</div>';
-    return;
-  }
-  listEl.innerHTML = studies.map(s => {
-    const date = new Date(s.updatedAt || s.createdAt).toLocaleDateString();
-    return `<div class="study-item">
-      <span class="study-name" data-id="${s.id}" title="Click to load">${s.name}</span>
-      <span class="study-date">${date}</span>
-      <button type="button" class="study-del" data-id="${s.id}" title="Delete">&times;</button>
-    </div>`;
-  }).join('');
-
-  listEl.querySelectorAll('.study-name').forEach(el => {
-    el.addEventListener('click', () => {
-      const data = loadStudy(el.dataset.id);
-      if (!data) return;
-      state.tx = data.tx;
-      state.faultPct = data.faultPct;
-      state.relays = data.relays;
-      if (data.overlays) state.overlays = data.overlays;
-      populateTxInputs();
-      populateOverlayInputs();
-      if (data.remarks) document.getElementById('remarksField').value = data.remarks;
-      rebuildAndRefresh();
-    });
-  });
-
-  listEl.querySelectorAll('.study-del').forEach(el => {
-    el.addEventListener('click', () => {
-      deleteStudy(el.dataset.id);
-      renderStudiesList();
-    });
-  });
-}
-
 // ---- Tab switching ----
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -212,36 +168,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
-    // Lazy-render studies list when Export tab is opened
-    if (btn.dataset.tab === 'export') renderStudiesList();
   });
-});
-
-document.getElementById('studySaveBtn').addEventListener('click', () => {
-  const name = prompt('Study name:');
-  if (!name) return;
-  const remarks = document.getElementById('remarksField').value;
-  saveStudy(name, state, remarks);
-  renderStudiesList();
-});
-
-document.getElementById('studyExportAllBtn').addEventListener('click', () => exportAllStudiesJSON());
-
-document.getElementById('studyImportBtn').addEventListener('click', () => {
-  document.getElementById('studyFileInput').click();
-});
-
-document.getElementById('studyFileInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  try {
-    const count = await importStudiesJSON(file);
-    showToast(`Imported ${count} study${count !== 1 ? 's' : ''}`);
-    renderStudiesList();
-  } catch (err) {
-    showToast(err.message);
-  }
-  e.target.value = '';
 });
 
 // ---- Overlays panel ----

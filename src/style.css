@@ -369,32 +369,6 @@
   .cti-warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
   .cti-danger { background: rgba(239,68,68,0.15); color: #ef4444; }
 
-  /* ---- Studies ---- */
-  .studies-actions {
-    display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
-  }
-  .studies-action-btn {
-    padding: 5px 10px; background: rgba(255,255,255,0.04);
-    border: 1px solid var(--panel-border); border-radius: 5px;
-    color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
-    font-size: 0.63rem; cursor: pointer; transition: background 0.2s;
-  }
-  .studies-action-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
-  .studies-list { display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; }
-  .study-item {
-    display: flex; align-items: center; gap: 6px; padding: 6px 8px;
-    background: rgba(255,255,255,0.02); border-radius: 5px;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-  }
-  .study-item:hover { background: rgba(255,255,255,0.05); }
-  .study-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); cursor: pointer; }
-  .study-name:hover { color: var(--accent); }
-  .study-date { color: var(--text-dim); font-size: 0.55rem; white-space: nowrap; }
-  .study-del {
-    background: none; border: none; color: var(--text-dim); cursor: pointer;
-    font-size: 0.85rem; padding: 0 2px; line-height: 1;
-  }
-  .study-del:hover { color: #ef4444; }
 
   /* ---- Overlays ---- */
   .overlay-section { padding: 8px 0; border-bottom: 1px solid var(--panel-border); }
