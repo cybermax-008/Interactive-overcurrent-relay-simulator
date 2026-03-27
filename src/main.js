@@ -204,13 +204,17 @@ function renderStudiesList() {
   });
 }
 
-document.getElementById('studiesToggle').addEventListener('click', () => {
-  const body = document.getElementById('studiesBody');
-  const arrow = document.getElementById('studiesArrow');
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  arrow.classList.toggle('open', open);
-  if (open) renderStudiesList();
+// ---- Tab switching ----
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
+    // Lazy-render studies list when Export tab is opened
+    if (btn.dataset.tab === 'export') renderStudiesList();
+  });
 });
 
 document.getElementById('studySaveBtn').addEventListener('click', () => {
@@ -278,13 +282,7 @@ function populateOverlayInputs() {
 
 populateOverlayInputs();
 
-document.getElementById('overlaysToggle').addEventListener('click', () => {
-  const body = document.getElementById('overlaysBody');
-  const arrow = document.getElementById('overlaysArrow');
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  arrow.classList.toggle('open', open);
-});
+// (Overlays panel is now a tab pane — no toggle needed)
 
 // Enable toggles
 const ovEnMap = {

@@ -69,19 +69,45 @@
   @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
 
   /* ---- Controls ---- */
-  .controls-panel { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 90px); overflow-y: auto; }
+  .controls-panel { display: flex; flex-direction: column; gap: 0; }
 
-  .tx-card {
+  /* ---- Tabs ---- */
+  .tab-nav {
+    display: flex; gap: 2px;
     background: var(--panel); border: 1px solid var(--panel-border);
-    border-radius: 10px; padding: 14px 16px;
-    border-left: 3px solid #8b5cf6;
+    border-radius: 10px 10px 0 0; padding: 4px 4px 0;
   }
-
-  .tx-card .tx-title {
+  .tab-btn {
+    flex: 1; padding: 10px 8px; background: none; border: none;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 600;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px;
+    cursor: pointer; border-radius: 6px 6px 0 0; transition: color 0.2s, background 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .tab-btn.active {
+    color: var(--accent); background: var(--bg);
+    border-bottom: 2px solid var(--accent);
+  }
+  .tab-pane {
+    background: var(--panel); border: 1px solid var(--panel-border); border-top: none;
+    border-radius: 0 0 10px 10px; padding: 14px 16px;
+    max-height: calc(100vh - 260px); overflow-y: auto;
+  }
+  .tab-section { margin-bottom: 14px; }
+  .tab-section:last-child { margin-bottom: 0; }
+  .tab-section-title {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.76rem; font-weight: 600; color: #8b5cf6;
+    font-size: 0.68rem; font-weight: 600; color: var(--accent);
     text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--panel-border);
   }
+  .action-buttons {
+    display: flex; gap: 8px; margin-top: 8px;
+  }
+  .action-buttons .reset-btn,
+  .action-buttons .export-btn,
+  .action-buttons .share-btn { flex: 1; }
 
   .tx-fields { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px 8px; }
 
@@ -343,23 +369,7 @@
   .cti-warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
   .cti-danger { background: rgba(239,68,68,0.15); color: #ef4444; }
 
-  /* ---- Studies panel ---- */
-  .studies-card {
-    background: var(--panel); border: 1px solid var(--panel-border);
-    border-radius: 10px; overflow: hidden;
-    border-left: 3px solid #3b82f6;
-  }
-  .studies-toggle {
-    display: flex; align-items: center; gap: 6px; width: 100%;
-    padding: 10px 14px; background: none; border: none; color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
-    transition: color 0.2s;
-  }
-  .studies-toggle:hover { color: var(--text); }
-  .studies-arrow { margin-left: auto; font-size: 0.7rem; transition: transform 0.2s; }
-  .studies-arrow.open { transform: rotate(90deg); }
-  .studies-body { padding: 0 14px 12px; }
+  /* ---- Studies ---- */
   .studies-actions {
     display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
   }
@@ -386,23 +396,7 @@
   }
   .study-del:hover { color: #ef4444; }
 
-  /* ---- Overlays panel ---- */
-  .overlays-card {
-    background: var(--panel); border: 1px solid var(--panel-border);
-    border-radius: 10px; overflow: hidden;
-    border-left: 3px solid #10b981;
-  }
-  .overlays-toggle {
-    display: flex; align-items: center; gap: 6px; width: 100%;
-    padding: 10px 14px; background: none; border: none; color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
-    transition: color 0.2s;
-  }
-  .overlays-toggle:hover { color: var(--text); }
-  .overlays-arrow { margin-left: auto; font-size: 0.7rem; transition: transform 0.2s; }
-  .overlays-arrow.open { transform: rotate(90deg); }
-  .overlays-body { padding: 0 14px 12px; }
+  /* ---- Overlays ---- */
   .overlay-section { padding: 8px 0; border-bottom: 1px solid var(--panel-border); }
   .overlay-section:last-child { border-bottom: none; }
   .overlay-enable {
@@ -514,6 +508,9 @@
   /* ---- Mobile breakpoints ---- */
   @media (max-width: 540px) {
     .app { padding: 12px 10px; }
+    .tab-nav { flex-wrap: wrap; }
+    .tab-btn { flex: 1 1 45%; font-size: 0.6rem; padding: 8px 6px; }
+    .tab-pane { max-height: none; }
     .tx-fields { grid-template-columns: 1fr 1fr; }
     .card-fields { grid-template-columns: 1fr 1fr; }
     .formula-bar { font-size: 0.8rem; overflow-x: auto; padding: 8px 12px; }

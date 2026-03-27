@@ -42,23 +42,16 @@
 
   <div class="layout">
     <div class="controls-panel">
-      <!-- Studies -->
-      <div class="studies-card" id="studiesCard">
-        <button type="button" class="studies-toggle" id="studiesToggle">📂 Studies <span id="studiesCount"></span> <span class="studies-arrow" id="studiesArrow">▸</span></button>
-        <div class="studies-body" id="studiesBody" style="display:none;">
-          <div class="studies-actions">
-            <button type="button" class="studies-action-btn" id="studySaveBtn">Save Current</button>
-            <button type="button" class="studies-action-btn" id="studyImportBtn">Import JSON</button>
-            <button type="button" class="studies-action-btn" id="studyExportAllBtn">Export All</button>
-            <input type="file" id="studyFileInput" accept=".json" style="display:none;">
-          </div>
-          <div class="studies-list" id="studiesList"></div>
-        </div>
+      <!-- Tab navigation -->
+      <div class="tab-nav">
+        <button type="button" class="tab-btn active" data-tab="transformer">Transformer</button>
+        <button type="button" class="tab-btn" data-tab="relays">Relays</button>
+        <button type="button" class="tab-btn" data-tab="overlays">Overlays</button>
+        <button type="button" class="tab-btn" data-tab="export">Export</button>
       </div>
 
-      <!-- Transformer Parameters -->
-      <div class="tx-card">
-        <div class="tx-title">🔌 Transformer Parameters</div>
+      <!-- Tab: Transformer -->
+      <div class="tab-pane active" id="tab-transformer">
         <div class="tx-fields">
           <div class="field">
             <label for="txMVA">MVA</label>
@@ -84,7 +77,7 @@
           <span class="tx-val" id="txSecFault100">—</span>
         </div>
         <div id="kvWarning" style="display:none;margin-top:6px;padding:6px 10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#f59e0b;">
-          ⚠ Primary kV &le; Secondary kV — verify transformer parameters
+          Warning: Primary kV &le; Secondary kV — verify transformer parameters
         </div>
         <div style="margin-top:10px;">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
@@ -101,68 +94,77 @@
         </div>
       </div>
 
-      <!-- Coordination Overlays -->
-      <div class="overlays-card" id="overlaysCard">
-        <button type="button" class="overlays-toggle" id="overlaysToggle">&#x1F4D0; Coordination Overlays <span class="overlays-arrow" id="overlaysArrow">&#x25B8;</span></button>
-        <div class="overlays-body" id="overlaysBody" style="display:none;">
-          <div class="overlay-section">
-            <label class="overlay-enable"><input type="checkbox" id="ovCableEn"> Cable Damage (BS 7671)</label>
-            <div class="overlay-fields" id="ovCableFields" style="display:none;">
-              <div class="field"><label for="ovCableMat">Material</label><select class="curve-select" id="ovCableMat"></select></div>
-              <div class="field"><label for="ovCableSize">Size (mm&sup2;)</label><select class="curve-select" id="ovCableSize"></select></div>
-              <div class="field"><label for="ovCableSide">Side</label><select class="curve-select" id="ovCableSide"><option value="pri">Primary</option><option value="sec" selected>Secondary</option></select></div>
-            </div>
+      <!-- Tab: Relays -->
+      <div class="tab-pane" id="tab-relays" style="display:none;">
+        <div id="cardsContainer"></div>
+      </div>
+
+      <!-- Tab: Overlays -->
+      <div class="tab-pane" id="tab-overlays" style="display:none;">
+        <div class="overlay-section">
+          <label class="overlay-enable"><input type="checkbox" id="ovCableEn"> Cable Damage (BS 7671)</label>
+          <div class="overlay-fields" id="ovCableFields" style="display:none;">
+            <div class="field"><label for="ovCableMat">Material</label><select class="curve-select" id="ovCableMat"></select></div>
+            <div class="field"><label for="ovCableSize">Size (mm&sup2;)</label><select class="curve-select" id="ovCableSize"></select></div>
+            <div class="field"><label for="ovCableSide">Side</label><select class="curve-select" id="ovCableSide"><option value="pri">Primary</option><option value="sec" selected>Secondary</option></select></div>
           </div>
-          <div class="overlay-section">
-            <label class="overlay-enable"><input type="checkbox" id="ovInrushEn"> TX Inrush (12&times; FLC)</label>
-            <div class="overlay-fields" id="ovInrushFields" style="display:none;">
-              <div class="overlay-auto-note">Auto-computed from transformer parameters</div>
-            </div>
+        </div>
+        <div class="overlay-section">
+          <label class="overlay-enable"><input type="checkbox" id="ovInrushEn"> TX Inrush (12&times; FLC)</label>
+          <div class="overlay-fields" id="ovInrushFields" style="display:none;">
+            <div class="overlay-auto-note">Auto-computed from transformer parameters</div>
           </div>
-          <div class="overlay-section">
-            <label class="overlay-enable"><input type="checkbox" id="ovWithstandEn"> TX Through-Fault Withstand</label>
-            <div class="overlay-fields" id="ovWithstandFields" style="display:none;">
-              <div class="field"><label for="ovWithstandCat">Category</label><select class="curve-select" id="ovWithstandCat"><option value="infrequent">Infrequent (2s)</option><option value="frequent">Frequent (1s)</option></select></div>
-              <div class="overlay-auto-note">I<sub>max</sub> derived from TX impedance</div>
-            </div>
+        </div>
+        <div class="overlay-section">
+          <label class="overlay-enable"><input type="checkbox" id="ovWithstandEn"> TX Through-Fault Withstand</label>
+          <div class="overlay-fields" id="ovWithstandFields" style="display:none;">
+            <div class="field"><label for="ovWithstandCat">Category</label><select class="curve-select" id="ovWithstandCat"><option value="infrequent">Infrequent (2s)</option><option value="frequent">Frequent (1s)</option></select></div>
+            <div class="overlay-auto-note">I<sub>max</sub> derived from TX impedance</div>
           </div>
-          <div class="overlay-section">
-            <label class="overlay-enable"><input type="checkbox" id="ovMcbEn"> MCB Curve (IEC 60898)</label>
-            <div class="overlay-fields" id="ovMcbFields" style="display:none;">
-              <div class="field"><label for="ovMcbType">Type</label><select class="curve-select" id="ovMcbType"><option value="B">Type B (3-5&times;)</option><option value="C">Type C (5-10&times;)</option><option value="D">Type D (10-20&times;)</option></select></div>
-              <div class="field"><label for="ovMcbRating">Rating (A)</label><select class="curve-select" id="ovMcbRating"></select></div>
-              <div class="field"><label for="ovMcbSide">Side</label><select class="curve-select" id="ovMcbSide"><option value="pri">Primary</option><option value="sec" selected>Secondary</option></select></div>
-            </div>
+        </div>
+        <div class="overlay-section">
+          <label class="overlay-enable"><input type="checkbox" id="ovMcbEn"> MCB Curve (IEC 60898)</label>
+          <div class="overlay-fields" id="ovMcbFields" style="display:none;">
+            <div class="field"><label for="ovMcbType">Type</label><select class="curve-select" id="ovMcbType"><option value="B">Type B (3-5&times;)</option><option value="C">Type C (5-10&times;)</option><option value="D">Type D (10-20&times;)</option></select></div>
+            <div class="field"><label for="ovMcbRating">Rating (A)</label><select class="curve-select" id="ovMcbRating"></select></div>
+            <div class="field"><label for="ovMcbSide">Side</label><select class="curve-select" id="ovMcbSide"><option value="pri">Primary</option><option value="sec" selected>Secondary</option></select></div>
           </div>
         </div>
       </div>
 
-      <!-- Relay Cards -->
-      <div id="cardsContainer"></div>
-
-      <!-- Report Settings -->
-      <div class="remarks-card">
-        <label class="remarks-label">📋 Report Settings</label>
-        <div class="report-fields">
-          <input type="text" class="label-input" id="rsCompany" placeholder="Company name" aria-label="Company name">
-          <input type="text" class="label-input" id="rsProject" placeholder="Project ref" aria-label="Project reference">
-          <input type="text" class="label-input" id="rsDocRef" placeholder="Doc ref" aria-label="Document reference">
-          <input type="text" class="label-input" id="rsRevision" placeholder="Rev" aria-label="Revision">
+      <!-- Tab: Export -->
+      <div class="tab-pane" id="tab-export" style="display:none;">
+        <div class="tab-section">
+          <div class="tab-section-title">Studies</div>
+          <div class="studies-actions">
+            <button type="button" class="studies-action-btn" id="studySaveBtn">Save Current</button>
+            <button type="button" class="studies-action-btn" id="studyImportBtn">Import JSON</button>
+            <button type="button" class="studies-action-btn" id="studyExportAllBtn">Export All</button>
+            <input type="file" id="studyFileInput" accept=".json" style="display:none;">
+          </div>
+          <div class="studies-list" id="studiesList"></div>
+        </div>
+        <div class="tab-section">
+          <div class="tab-section-title">Report Settings</div>
+          <div class="report-fields">
+            <input type="text" class="label-input" id="rsCompany" placeholder="Company name" aria-label="Company name">
+            <input type="text" class="label-input" id="rsProject" placeholder="Project ref" aria-label="Project reference">
+            <input type="text" class="label-input" id="rsDocRef" placeholder="Doc ref" aria-label="Document reference">
+            <input type="text" class="label-input" id="rsRevision" placeholder="Rev" aria-label="Revision">
+          </div>
+        </div>
+        <div class="tab-section">
+          <div class="tab-section-title">Remarks / Notes</div>
+          <textarea id="remarksField" class="remarks-input" placeholder="Add notes here... (visible in export)" rows="3" aria-label="Remarks and notes"></textarea>
         </div>
       </div>
 
-      <!-- Remarks -->
-      <div class="remarks-card">
-        <label class="remarks-label">📝 Remarks / Notes</label>
-        <textarea id="remarksField" class="remarks-input" placeholder="Add notes here... (visible in export)" rows="3" aria-label="Remarks and notes"></textarea>
-      </div>
-
-      <!-- Actions -->
-      <div style="display:flex;gap:8px;">
-        <button type="button" class="reset-btn" id="resetBtn" style="flex:1;">↺ Reset</button>
-        <button type="button" class="export-btn" id="exportBtn" style="flex:1;">📄 PDF</button>
-        <button type="button" class="export-btn" id="csvBtn" style="flex:1;">📊 CSV</button>
-        <button type="button" class="share-btn" id="shareBtn" style="flex:1;">🔗 Share</button>
+      <!-- Action buttons (always visible) -->
+      <div class="action-buttons">
+        <button type="button" class="reset-btn" id="resetBtn">&#x21BA; Reset</button>
+        <button type="button" class="export-btn" id="exportBtn">PDF</button>
+        <button type="button" class="export-btn" id="csvBtn">CSV</button>
+        <button type="button" class="share-btn" id="shareBtn">Share</button>
       </div>
     </div>
 
