@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Worked examples for IDMT relay coordination — four real-world scenarios covering 33/11kV substations, cable protection, MCB coordination, and IEEE curve comparisons.">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="Worked Examples — IDMT Overcurrent Relay Simulator">
+<meta property="og:description" content="Step-by-step protection coordination scenarios: basic substation grading, cable damage verification, MCB discrimination, and IEEE curve shape comparison.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/docs/worked-examples.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/docs/worked-examples.html">
+<title>Worked Examples — IDMT Overcurrent Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Worked Examples — IDMT Overcurrent Relay Simulator",
+  "description": "Four real-world protection coordination scenarios with step-by-step relay grading, fault current calculations, and result interpretation using the IDMT relay simulator.",
+  "url": "https://power-system-tool.vercel.app/docs/worked-examples.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/docs/worked-examples.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="docs-layout">
+  <nav class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-title">Documentation</div>
+    <a href="/docs/getting-started.html" class="sidebar-link">Getting Started</a>
+    <a href="/docs/formulas.html" class="sidebar-link">Formula Reference</a>
+    <a href="/docs/relay-settings.html" class="sidebar-link">Relay Settings</a>
+    <a href="/docs/coordination-overlays.html" class="sidebar-link">Coordination Overlays</a>
+    <a href="/docs/worked-examples.html" class="sidebar-link active">Worked Examples</a>
+    <a href="/docs/export-sharing.html" class="sidebar-link">Export &amp; Sharing</a>
+    <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+  </nav>
+
+  <main class="docs-content prose">
+    <h1>Worked Examples</h1>
+
+    <p>This page walks through four real-world protection coordination scenarios from start to finish. Each example sets up a transformer, configures relays, and examines the resulting trip times and coordination margins. Use them as templates for your own studies or to build familiarity with the simulator.</p>
+
+    <!-- ============================================================ -->
+    <h2>Example 1 -- Basic 33/11 kV Substation</h2>
+
+    <p>A straightforward two-relay coordination study on a medium-voltage distribution transformer. The goal is to grade the primary and secondary overcurrent relays so that the secondary relay trips first for downstream faults, with an adequate coordination time interval (CTI) to the primary.</p>
+
+    <h3>Scenario</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Transformer rating</td><td>10 MVA</td></tr>
+        <tr><td>Primary voltage</td><td>33 kV</td></tr>
+        <tr><td>Secondary voltage</td><td>11 kV</td></tr>
+        <tr><td>Impedance (Z%)</td><td>8%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Relay Configuration</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Relay</th>
+          <th>Side</th>
+          <th>Curve</th>
+          <th>CT Primary</th>
+          <th>Pickup Mul.</th>
+          <th>TMS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>R1 -- Primary OC</td>
+          <td>Primary</td>
+          <td>IEC Standard Inverse</td>
+          <td>200 A</td>
+          <td>0.50</td>
+          <td>0.40</td>
+        </tr>
+        <tr>
+          <td>R2 -- Secondary OC</td>
+          <td>Secondary</td>
+          <td>IEC Standard Inverse</td>
+          <td>600 A</td>
+          <td>0.50</td>
+          <td>0.15</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Fault Current Derivation</h3>
+
+    <p>Using the formula <code>I_fault = (MVA x 1000) / (kV x sqrt(3) x Z%/100)</code>:</p>
+
+    <ul>
+      <li><strong>Secondary fault current (100%):</strong> (10 x 1000) / (11 x 1.732 x 0.08) = <strong>6561 A</strong></li>
+      <li><strong>Primary fault current (100%):</strong> (10 x 1000) / (33 x 1.732 x 0.08) = <strong>2187 A</strong></li>
+    </ul>
+
+    <h3>Pickup Settings (I<sub>set</sub>)</h3>
+
+    <ul>
+      <li><strong>R1:</strong> I<sub>set</sub> = 200 x 0.50 = <strong>100 A</strong></li>
+      <li><strong>R2:</strong> I<sub>set</sub> = 600 x 0.50 = <strong>300 A</strong></li>
+    </ul>
+
+    <h3>Trip Times at 100% Fault Level</h3>
+
+    <p>Using the IEC Standard Inverse formula <code>t = (0.14 / ((I/I_set)^0.02 - 1)) x TMS</code>:</p>
+
+    <ul>
+      <li><strong>R2 (secondary):</strong> I/I<sub>set</sub> = 6561/300 = 21.87. Trip time = (0.14 / (21.87^0.02 - 1)) x 0.15 = approximately <strong>0.34 s</strong></li>
+      <li><strong>R1 (primary):</strong> I/I<sub>set</sub> = 2187/100 = 21.87. Trip time = (0.14 / (21.87^0.02 - 1)) x 0.40 = approximately <strong>0.91 s</strong></li>
+    </ul>
+
+    <h3>CTI Check</h3>
+
+    <p>The coordination time interval between R1 and R2 is 0.91 - 0.34 = <strong>0.57 seconds</strong>. This exceeds the typical minimum CTI of 0.3 to 0.4 seconds, confirming that R2 will always clear downstream faults before R1 operates. The grading is satisfactory.</p>
+
+    <h3>Key Observations</h3>
+
+    <ul>
+      <li>Both relays use the same curve type (IEC SI), so the grading is achieved purely through TMS differentiation.</li>
+      <li>The CT ratios are chosen to match the full-load current on each side, with a pickup multiplier of 0.5 providing sensitivity to faults at roughly half the CT primary rating.</li>
+      <li>The 0.57 s CTI margin gives comfortable room for breaker operating time and relay timing tolerances.</li>
+    </ul>
+
+    <a href="/" class="sim-link">
+      <div class="sim-link-icon">[Sim]</div>
+      <div class="sim-link-text">
+        <strong>Open this example in simulator</strong>
+        <small>Load the 33/11 kV basic substation study with pre-configured relay settings</small>
+      </div>
+      <div class="sim-link-arrow">-></div>
+    </a>
+
+    <!-- ============================================================ -->
+    <h2>Example 2 -- Full Coordination with Cable Protection</h2>
+
+    <p>This example extends Example 1 by adding two additional relays and enabling the cable damage overlay. The goal is to verify that all four relays coordinate with each other and that the secondary cable is protected within its thermal damage limit.</p>
+
+    <h3>Scenario</h3>
+
+    <p>Same transformer as Example 1: <strong>10 MVA, 33/11 kV, Z = 8%</strong>. The secondary side uses Cu/XLPE cable with a cross-section of <strong>95 mm<sup>2</sup></strong>.</p>
+
+    <h3>Relay Configuration</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Relay</th>
+          <th>Side</th>
+          <th>Curve</th>
+          <th>CT Primary</th>
+          <th>Pickup Mul.</th>
+          <th>TMS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>R1 -- Primary backup</td>
+          <td>Primary</td>
+          <td>IEC Standard Inverse</td>
+          <td>200 A</td>
+          <td>0.50</td>
+          <td>0.40</td>
+        </tr>
+        <tr>
+          <td>R2 -- Primary main</td>
+          <td>Primary</td>
+          <td>IEC Standard Inverse</td>
+          <td>200 A</td>
+          <td>0.50</td>
+          <td>0.30</td>
+        </tr>
+        <tr>
+          <td>R3 -- Secondary backup</td>
+          <td>Secondary</td>
+          <td>IEC Standard Inverse</td>
+          <td>600 A</td>
+          <td>0.50</td>
+          <td>0.20</td>
+        </tr>
+        <tr>
+          <td>R4 -- Secondary main</td>
+          <td>Secondary</td>
+          <td>IEC Standard Inverse</td>
+          <td>600 A</td>
+          <td>0.50</td>
+          <td>0.10</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>TMS Grading</h3>
+
+    <p>The four relays are graded with descending TMS values from the slowest (R1, furthest upstream) to the fastest (R4, closest to the fault). At 100% fault level, the approximate trip times are:</p>
+
+    <ul>
+      <li><strong>R4:</strong> TMS 0.10 -- approximately <strong>0.23 s</strong></li>
+      <li><strong>R3:</strong> TMS 0.20 -- approximately <strong>0.45 s</strong> (CTI to R4: ~0.22 s)</li>
+      <li><strong>R2:</strong> TMS 0.30 -- approximately <strong>0.68 s</strong> (CTI to R3: ~0.23 s)</li>
+      <li><strong>R1:</strong> TMS 0.40 -- approximately <strong>0.91 s</strong> (CTI to R2: ~0.23 s)</li>
+    </ul>
+
+    <h3>Cable Damage Verification</h3>
+
+    <p>Enable the cable damage overlay with these settings:</p>
+
+    <ul>
+      <li><strong>Conductor:</strong> Copper</li>
+      <li><strong>Insulation:</strong> XLPE (k = 143)</li>
+      <li><strong>Cross-section:</strong> 95 mm<sup>2</sup></li>
+    </ul>
+
+    <p>At the maximum secondary fault current of 6561 A, the cable damage time is:</p>
+
+    <p><code>t = (143 x 95 / 6561)^2 = (13585 / 6561)^2 = 2.07^2 = 4.29 s</code></p>
+
+    <p>All four relays trip well under 4.29 seconds at this current, so the cable is protected. Check the TCC chart to confirm that the relay curves remain below the cable damage line across the entire fault current range, not just at the maximum value.</p>
+
+    <h3>Key Observations</h3>
+
+    <ul>
+      <li>With four relays, the CTI between adjacent relays is tighter (~0.22 s). In practice you may want to increase the spacing by widening the TMS steps.</li>
+      <li>The cable damage curve at 95 mm<sup>2</sup> Cu/XLPE sits comfortably above all relay curves, confirming adequate cable protection.</li>
+      <li>If the cable were smaller (e.g., 25 mm<sup>2</sup>), the damage curve would drop significantly, and you would need to verify that R4 still trips below it.</li>
+    </ul>
+
+    <a href="/" class="sim-link">
+      <div class="sim-link-icon">[Sim]</div>
+      <div class="sim-link-text">
+        <strong>Open this example in simulator</strong>
+        <small>Load the four-relay cable protection study with damage overlay enabled</small>
+      </div>
+      <div class="sim-link-arrow">-></div>
+    </a>
+
+    <!-- ============================================================ -->
+    <h2>Example 3 -- MCB Coordination</h2>
+
+    <p>In small distribution transformers, the secondary side often feeds circuits protected by miniature circuit breakers. This example demonstrates how an upstream IDMT relay on the primary side coordinates with a downstream MCB on the secondary.</p>
+
+    <h3>Scenario</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Transformer rating</td><td>0.5 MVA</td></tr>
+        <tr><td>Primary voltage</td><td>11 kV</td></tr>
+        <tr><td>Secondary voltage</td><td>0.415 kV</td></tr>
+        <tr><td>Impedance (Z%)</td><td>5%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Device Configuration</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Device</th>
+          <th>Type</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>MCB</td>
+          <td>Type C, 32 A</td>
+          <td>Secondary side -- magnetic trip at 5-10x (160-320 A)</td>
+        </tr>
+        <tr>
+          <td>Relay R1</td>
+          <td>IEC Standard Inverse</td>
+          <td>Primary side -- CT 50 A, pickup 0.80, TMS 0.30</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Fault Current Derivation</h3>
+
+    <ul>
+      <li><strong>Secondary fault current (100%):</strong> (0.5 x 1000) / (0.415 x 1.732 x 0.05) = <strong>13,908 A</strong></li>
+      <li><strong>Primary fault current (100%):</strong> (0.5 x 1000) / (11 x 1.732 x 0.05) = <strong>525 A</strong></li>
+    </ul>
+
+    <h3>Relay Pickup</h3>
+
+    <p>R1: I<sub>set</sub> = 50 x 0.80 = <strong>40 A</strong>. At 100% fault level on the primary, I/I<sub>set</sub> = 525/40 = 13.13.</p>
+
+    <h3>Coordination Check</h3>
+
+    <p>Enable the MCB overlay with Type C, 32 A. On the TCC chart, the MCB curve appears in the low-current region (up to a few hundred amps on the secondary axis). The relay curve, referred to the primary side, should sit above the MCB band at all overlapping current levels.</p>
+
+    <p>The Type C 32 A MCB has:</p>
+    <ul>
+      <li><strong>Thermal region:</strong> Inverse-time trip from approximately 1.13x to 5x rated current (36 A to 160 A)</li>
+      <li><strong>Magnetic region:</strong> Instantaneous trip between 5x and 10x rated current (160 A to 320 A)</li>
+    </ul>
+
+    <p>At the MCB's magnetic trip threshold (320 A on the secondary), the relay on the primary sees a proportionally referred current. The relay trip time at this current level should exceed the MCB's maximum clearing time plus the CTI margin.</p>
+
+    <h3>Key Observations</h3>
+
+    <ul>
+      <li>The MCB clears low-level faults near the secondary distribution board without involving the upstream relay.</li>
+      <li>For high-level faults close to the transformer, both the MCB (instantaneously) and the relay respond, but the MCB acts faster due to its magnetic trip.</li>
+      <li>The relay serves as backup protection -- it operates only if the MCB fails to clear the fault.</li>
+      <li>The relatively low TMS of 0.30 keeps the relay fast enough to protect the transformer, while still sitting above the MCB band.</li>
+    </ul>
+
+    <a href="/" class="sim-link">
+      <div class="sim-link-icon">[Sim]</div>
+      <div class="sim-link-text">
+        <strong>Open this example in simulator</strong>
+        <small>Load the 0.5 MVA transformer study with MCB Type C overlay</small>
+      </div>
+      <div class="sim-link-arrow">-></div>
+    </a>
+
+    <!-- ============================================================ -->
+    <h2>Example 4 -- IEEE Curve Comparison</h2>
+
+    <p>This example places three relays on the same transformer secondary, each using a different IEEE curve type with identical pickup and TMS settings. The purpose is to illustrate how the choice of curve shape affects trip times at different fault levels.</p>
+
+    <h3>Scenario</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Transformer rating</td><td>10 MVA</td></tr>
+        <tr><td>Primary voltage</td><td>33 kV</td></tr>
+        <tr><td>Secondary voltage</td><td>11 kV</td></tr>
+        <tr><td>Impedance (Z%)</td><td>8%</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Relay Configuration</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Relay</th>
+          <th>Side</th>
+          <th>Curve</th>
+          <th>CT Primary</th>
+          <th>Pickup Mul.</th>
+          <th>TMS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>R1</td>
+          <td>Secondary</td>
+          <td>IEEE Moderately Inverse</td>
+          <td>600 A</td>
+          <td>0.50</td>
+          <td>0.20</td>
+        </tr>
+        <tr>
+          <td>R2</td>
+          <td>Secondary</td>
+          <td>IEEE Very Inverse</td>
+          <td>600 A</td>
+          <td>0.50</td>
+          <td>0.20</td>
+        </tr>
+        <tr>
+          <td>R3</td>
+          <td>Secondary</td>
+          <td>IEEE Extremely Inverse</td>
+          <td>600 A</td>
+          <td>0.50</td>
+          <td>0.20</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>All three relays share the same CT primary (600 A), pickup multiplier (0.50), and TMS (0.20), so I<sub>set</sub> = 300 A for each. The only difference is the curve type.</p>
+
+    <h3>Trip Time Comparison</h3>
+
+    <p>The following table shows approximate trip times at selected fault levels. The secondary fault current at 100% is 6561 A.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Fault Level</th>
+          <th>I<sub>fault</sub> (A)</th>
+          <th>I/I<sub>set</sub></th>
+          <th>R1 (IEEE MI)</th>
+          <th>R2 (IEEE VI)</th>
+          <th>R3 (IEEE EI)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>20%</td>
+          <td>1312</td>
+          <td>4.37</td>
+          <td>1.07 s</td>
+          <td>0.77 s</td>
+          <td>0.59 s</td>
+        </tr>
+        <tr>
+          <td>50%</td>
+          <td>3281</td>
+          <td>10.94</td>
+          <td>0.57 s</td>
+          <td>0.20 s</td>
+          <td>0.06 s</td>
+        </tr>
+        <tr>
+          <td>80%</td>
+          <td>5249</td>
+          <td>17.50</td>
+          <td>0.47 s</td>
+          <td>0.12 s</td>
+          <td>0.02 s</td>
+        </tr>
+        <tr>
+          <td>100%</td>
+          <td>6561</td>
+          <td>21.87</td>
+          <td>0.43 s</td>
+          <td>0.10 s</td>
+          <td>0.01 s</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Key Observations</h3>
+
+    <ul>
+      <li><strong>At low fault multiples (I/I<sub>set</sub> near 4x):</strong> All three curves produce broadly similar trip times, with the EI curve only slightly faster than MI.</li>
+      <li><strong>At high fault multiples (I/I<sub>set</sub> above 10x):</strong> The curves diverge dramatically. IEEE EI trips in tens of milliseconds, while IEEE MI remains above 0.4 seconds. This is the defining characteristic -- "extremely inverse" curves are much steeper.</li>
+      <li><strong>IEEE MI</strong> is suitable when you need a relatively flat characteristic that does not change trip time drastically with current magnitude.</li>
+      <li><strong>IEEE VI</strong> provides a middle ground with moderate steepness, useful for grading with fuses or other inverse-time devices.</li>
+      <li><strong>IEEE EI</strong> is ideal for protecting equipment with <code>I^2 x t</code> damage characteristics (such as cables and transformers), because the relay curve shape closely matches the damage curve slope.</li>
+    </ul>
+
+    <p>Open this study in the simulator to see all three curves on the same TCC chart. Adjust the fault level slider and observe how the trip times change at different points along each curve.</p>
+
+    <a href="/" class="sim-link">
+      <div class="sim-link-icon">[Sim]</div>
+      <div class="sim-link-text">
+        <strong>Open this example in simulator</strong>
+        <small>Load the IEEE curve comparison study with three secondary relays</small>
+      </div>
+      <div class="sim-link-arrow">-></div>
+    </a>
+
+    <!-- ============================================================ -->
+
+    <div class="page-nav">
+      <a href="/docs/coordination-overlays.html">
+        <div class="page-nav-label">Previous</div>
+        <div class="page-nav-title">Coordination Overlays</div>
+      </a>
+      <a href="/docs/export-sharing.html" class="next">
+        <div class="page-nav-label">Next</div>
+        <div class="page-nav-title">Export &amp; Sharing</div>
+      </a>
+    </div>
+
+    <div class="docs-footer">
+      <p><a href="/docs/">All Documentation</a> &middot; <a href="/">Back to Simulator</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

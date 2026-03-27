@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Learn how IDMT overcurrent relay curves work: the inverse time formula, IEC 60255 curve types (SI, VI, EI, LTI), and how to choose the right curve shape for your protection scheme.">
+<meta name="keywords" content="IDMT relay curves, overcurrent relay, IEC 60255, inverse definite minimum time, relay protection, TCC chart">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="Understanding IDMT Overcurrent Relay Curves — IDMT Relay Simulator">
+<meta property="og:description" content="A practical guide to inverse definite minimum time relay characteristics, the trip time formula, and how to choose between Standard Inverse, Very Inverse, and Extremely Inverse curves.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/blog/idmt-overcurrent-relay-curves.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/blog/idmt-overcurrent-relay-curves.html">
+<title>Understanding IDMT Overcurrent Relay Curves — IDMT Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Understanding IDMT Overcurrent Relay Curves",
+  "description": "A practical guide to inverse definite minimum time relay characteristics, the trip time formula, and how to choose between Standard Inverse, Very Inverse, and Extremely Inverse curves.",
+  "datePublished": "2026-03-27",
+  "url": "https://power-system-tool.vercel.app/blog/idmt-overcurrent-relay-curves.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/blog/idmt-overcurrent-relay-curves.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="blog-layout prose">
+  <div class="blog-header">
+    <time datetime="2026-03-27">March 27, 2026</time>
+    <h1>Understanding IDMT Overcurrent Relay Curves</h1>
+    <p class="blog-subtitle">A practical guide to inverse time characteristics -- the equations, the curve shapes, and the engineering decisions behind them.</p>
+  </div>
+
+  <h2>What Is an Overcurrent Relay?</h2>
+
+  <p>An overcurrent relay is a protective device that monitors the current flowing through a section of a power system and initiates a trip signal when that current exceeds a predetermined threshold. In the simplest terms, it answers a single question: is the current too high? If the answer is yes, the relay commands a circuit breaker to open, isolating the faulted section before equipment is damaged.</p>
+
+  <p>Overcurrent relays are the workhorses of power system protection. They are found at every level of the network, from high-voltage transmission substations down to low-voltage distribution boards. Their simplicity, low cost, and proven reliability have made them the default choice for radial feeder protection for over a century. Modern numerical relays implement the same fundamental time-current characteristics that electromechanical disc relays established decades ago, only with greater precision and additional features.</p>
+
+  <p>There are two broad categories. A <strong>definite time</strong> relay trips after a fixed delay regardless of how much the current exceeds its setting. An <strong>inverse time</strong> relay trips faster as the current increases -- the higher the fault, the shorter the operating time. Most protection schemes use inverse time characteristics because they naturally provide faster clearance for severe faults while allowing temporary overloads and inrush currents to pass without nuisance tripping.</p>
+
+  <h2>The "Inverse Definite Minimum Time" Principle</h2>
+
+  <p>The name IDMT -- Inverse Definite Minimum Time -- captures the two defining properties of these relays. The "inverse" part means the operating time is inversely related to the fault current magnitude. Double the fault current, and the trip time drops (though not by exactly half -- the rate of decrease depends on the curve shape). The "definite minimum time" part means there is a floor: no matter how large the fault current becomes, the relay will never trip faster than its minimum operating time.</p>
+
+  <p>This behaviour is critical for coordination. Consider two relays in series -- one at a distribution feeder and another upstream at the substation bus. Both see the same fault current for a downstream fault. The downstream relay should trip first. By selecting appropriate curve types and time multiplier settings, the protection engineer ensures that each relay pair maintains a safe time margin (the coordination time interval, or CTI) across the full range of possible fault currents.</p>
+
+  <p>Without the inverse characteristic, you would need to set deliberate fixed time delays at each level, resulting in unacceptably slow clearance at the upstream end of a long radial feeder. The inverse characteristic compresses the total clearance time by allowing all relays to speed up as fault severity increases.</p>
+
+  <h2>The Fundamental Formula</h2>
+
+  <p>The trip time for an IDMT relay is calculated from a standardised equation that all modern relays implement. The general form, covering both IEC and IEEE standards, is:</p>
+
+  <div class="formula-box">
+    <span class="var">t</span> = ( <span class="const">k</span> / ( <span class="var">M</span><sup>alpha</sup> - 1 ) + <span class="var">beta</span> ) x <span class="var">TMS</span>
+  </div>
+
+  <p>Where each variable represents:</p>
+
+  <ul>
+    <li><strong>t</strong> -- The relay operating time in seconds. This is the time from the moment fault current exceeds the pickup threshold to the moment the relay issues a trip command.</li>
+    <li><strong>k</strong> -- A curve constant that sets the overall time scale. Higher values of k produce longer trip times for the same current multiple. Each standard curve type defines its own value of k.</li>
+    <li><strong>M</strong> -- The current multiple, defined as <code>I_fault / I_set</code>, where I_fault is the actual fault current and I_set is the relay pickup current. The relay only operates when M is greater than 1. At M = 1, the denominator goes to zero and the operating time is theoretically infinite -- the relay is right at its pickup threshold.</li>
+    <li><strong>alpha</strong> -- The curve exponent that controls steepness. A larger alpha makes the curve drop more steeply as current increases. Standard Inverse uses alpha = 0.02 (very flat), while Extremely Inverse uses alpha = 2.0 (very steep).</li>
+    <li><strong>beta</strong> -- An additive time constant. For IEC curves, beta is zero. For IEEE curves, beta is a small positive value that adds a fixed time offset, creating a slightly different curve shape at high multiples.</li>
+    <li><strong>TMS</strong> -- The Time Multiplier Setting, a user-adjustable scaling factor between 0.05 and 1.0 that shifts the entire curve up or down on the time axis. This is the primary knob the protection engineer turns when grading relays. A TMS of 0.5 halves all trip times compared to TMS of 1.0.</li>
+  </ul>
+
+  <h2>IEC Standard Inverse -- The Most Common Curve</h2>
+
+  <p>Of all the available curve types, the IEC Standard Inverse (SI) is by far the most widely used. Its constants are k = 0.14 and alpha = 0.02, with beta = 0. The resulting equation is:</p>
+
+  <div class="formula-box">
+    <span class="var">t</span> = <span class="const">0.14</span> / ( <span class="var">M</span><sup>0.02</sup> - 1 ) x <span class="var">TMS</span>
+  </div>
+
+  <p>The very small exponent (0.02) gives this curve a gentle, nearly flat slope on a log-log chart. At a current multiple of 2 (twice the pickup), the trip time at TMS = 1.0 is approximately 10 seconds. At a multiple of 10, it drops to about 3 seconds. At a multiple of 20, it is around 2.2 seconds. The curve flattens out at high multiples but never reaches zero.</p>
+
+  <p>This gradual inverse shape is well suited to general-purpose feeder protection where fault currents do not vary enormously between minimum and maximum conditions. It provides predictable, well-spaced trip times that are straightforward to coordinate. Most utility and industrial protection standards specify IEC SI as the default curve type unless there is a specific reason to choose otherwise.</p>
+
+  <p>The SI curve is also forgiving during coordination studies. Because it does not drop steeply, small errors in fault level estimation or CT ratio selection do not drastically affect the time margin between relay pairs. This robustness is one reason it has remained the dominant choice for decades.</p>
+
+  <h2>Why Different Curve Shapes Exist</h2>
+
+  <p>If Standard Inverse works so well, why do six other curve types exist? The answer lies in the diversity of protection requirements across different parts of a power system. Each curve shape optimises a different trade-off between speed, selectivity, and thermal protection.</p>
+
+  <table>
+    <tr>
+      <th>Curve Type</th>
+      <th>k</th>
+      <th>alpha</th>
+      <th>Steepness</th>
+      <th>Typical Application</th>
+    </tr>
+    <tr>
+      <td>IEC Standard Inverse</td>
+      <td>0.14</td>
+      <td>0.02</td>
+      <td>Gentle</td>
+      <td>General feeder protection</td>
+    </tr>
+    <tr>
+      <td>IEC Very Inverse</td>
+      <td>13.5</td>
+      <td>1.0</td>
+      <td>Moderate</td>
+      <td>Feeders with wide fault range</td>
+    </tr>
+    <tr>
+      <td>IEC Extremely Inverse</td>
+      <td>80.0</td>
+      <td>2.0</td>
+      <td>Steep</td>
+      <td>Cable protection, fuse coordination</td>
+    </tr>
+    <tr>
+      <td>IEC Long Time Inverse</td>
+      <td>120.0</td>
+      <td>1.0</td>
+      <td>Moderate (slow)</td>
+      <td>Overload protection, thermal limits</td>
+    </tr>
+  </table>
+
+  <p><strong>Very Inverse (VI)</strong> curves use alpha = 1.0, making them significantly steeper than SI. The trip time drops roughly in proportion to 1/M, so doubling the current approximately halves the trip time. This steeper characteristic provides better discrimination at high fault currents, making VI a good choice on feeders where the ratio of maximum to minimum fault current is large -- for example, long overhead lines where the fault level varies substantially depending on fault location.</p>
+
+  <p><strong>Extremely Inverse (EI)</strong> curves take steepness further with alpha = 2.0. Trip time decreases roughly as 1/M-squared. This means the relay accelerates dramatically for high-current faults. EI curves are specifically designed for two applications: coordinating with fuses (which have a similarly steep characteristic) and protecting cables where the thermal damage limit follows an I-squared-t relationship. On a log-log chart, an EI relay curve can be made to run just below a cable damage curve, ensuring the relay always clears the fault before the cable is damaged.</p>
+
+  <p><strong>Long Time Inverse (LTI)</strong> is the outlier. Despite having alpha = 1.0 (same as VI), its very large k value of 120 produces long operating times even at high multiples. LTI is used for overload protection and applications where the relay must ride through short-duration overcurrents but still provide backup protection on an extended timescale.</p>
+
+  <h2>Putting It Into Practice</h2>
+
+  <p>Understanding curve equations on paper is useful, but the real learning happens when you see how relay settings interact on a time-current characteristic chart. Changing the curve type from SI to EI visibly steepens the line on the log-log plot. Reducing TMS shifts the entire curve downward (faster). Increasing the pickup multiplier shifts the curve to the right (higher threshold).</p>
+
+  <p>The IDMT Relay Simulator lets you configure up to eight relays with different curve types, overlay them on a single TCC chart, and immediately see the coordination margins at any fault level. This interactive feedback loop is the fastest way to develop intuition for how each parameter affects protection performance.</p>
+
+  <a href="/" class="sim-link">
+    <span class="sim-link-icon">[Sim]</span>
+    <span class="sim-link-text">
+      <strong>Try different curves in the simulator</strong>
+      <small>Compare SI, VI, and EI curves side by side on a live TCC chart</small>
+    </span>
+    <span class="sim-link-arrow">-></span>
+  </a>
+
+  <h2>Key Takeaways</h2>
+
+  <ul>
+    <li><strong>IDMT relays trip faster for larger faults</strong> but always have a minimum operating time, combining inverse and definite time behaviour in a single characteristic.</li>
+    <li><strong>The trip time equation</strong> t = (k / (M^alpha - 1) + beta) x TMS applies to all standard curve types. The constants k, alpha, and beta define the curve shape; the TMS is the engineer's adjustment knob.</li>
+    <li><strong>IEC Standard Inverse is the default choice</strong> for most feeder protection applications. Its gentle slope provides robust, predictable coordination with wide margins for error.</li>
+    <li><strong>Steeper curves (VI, EI) provide faster clearance at high fault currents</strong> and are used where the fault current range is wide, where fuse coordination is required, or where cable thermal limits must be respected.</li>
+    <li><strong>The TMS setting scales all trip times linearly</strong>. Halving TMS halves the operating time at every fault level. This is the primary tool for grading relays in a coordination study.</li>
+  </ul>
+
+  <div class="docs-footer">
+    <p><a href="/blog/">Back to Blog</a></p>
+  </div>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

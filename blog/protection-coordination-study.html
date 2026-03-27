@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Step-by-step guide to performing a protection coordination study with overcurrent relays. Covers fault level calculation, relay grading, CTI margins, equipment limits, and documentation.">
+<meta name="keywords" content="protection coordination study, relay coordination, overcurrent relay grading, CTI, selectivity, time grading">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="How to Perform a Protection Coordination Study — IDMT Relay Simulator">
+<meta property="og:description" content="A complete walkthrough of overcurrent relay coordination: from fault level calculation through relay grading to final documentation and export.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/blog/protection-coordination-study.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/blog/protection-coordination-study.html">
+<title>How to Perform a Protection Coordination Study — IDMT Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to Perform a Protection Coordination Study",
+  "description": "A complete walkthrough of overcurrent relay coordination: from fault level calculation through relay grading to final documentation and export.",
+  "datePublished": "2026-03-27",
+  "url": "https://power-system-tool.vercel.app/blog/protection-coordination-study.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/blog/protection-coordination-study.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="blog-layout prose">
+  <div class="blog-header">
+    <time datetime="2026-03-27">March 27, 2026</time>
+    <h1>How to Perform a Protection Coordination Study</h1>
+    <p class="blog-subtitle">A complete walkthrough from fault level calculation to a fully documented relay grading scheme with verified coordination margins.</p>
+  </div>
+
+  <h2>What Is Protection Coordination?</h2>
+
+  <p>Protection coordination -- also called relay grading or selectivity study -- is the process of setting multiple protective devices in a power system so that only the device nearest to a fault operates, while all upstream devices remain on standby as backup. The goal is to isolate the faulted section with minimal disruption to the rest of the network.</p>
+
+  <p>Consider a simple radial system: a transformer feeds a main bus, which feeds several outgoing feeders, each with its own circuit breaker and overcurrent relay. When a fault occurs on one feeder, the ideal outcome is that only that feeder's relay trips. The bus relay sees the same fault current but waits a deliberate time interval before it would trip. If the feeder relay fails to clear the fault, the bus relay operates as backup. If that also fails, the transformer primary relay steps in as a final safety net.</p>
+
+  <p>This cascading selectivity does not happen by accident. It requires careful calculation and verification across the full range of possible fault currents, from the minimum fault at the remote end of a feeder to the maximum bolted three-phase fault at the bus. A coordination study is the systematic process of achieving this.</p>
+
+  <h2>The Goal -- Selectivity</h2>
+
+  <p>Selectivity means that for any fault location, the correct relay trips first. The "correct" relay is the one closest to the fault on the supply side. All other relays in the chain must be held off by a sufficient time margin, known as the <strong>coordination time interval</strong> (CTI) or grading margin.</p>
+
+  <p>Industry practice sets the CTI at <strong>0.3 to 0.4 seconds</strong>. This margin accounts for several real-world uncertainties:</p>
+
+  <ul>
+    <li><strong>Circuit breaker operating time</strong> -- The downstream breaker takes 3 to 5 cycles (50-100 ms) to physically interrupt the fault current after receiving the trip signal.</li>
+    <li><strong>Relay timing errors</strong> -- Even numerical relays have a specified timing accuracy, typically plus or minus 5% or plus or minus 40 ms.</li>
+    <li><strong>CT errors</strong> -- The current transformer may saturate during a fault, causing the relay to see a slightly different current than the true value.</li>
+    <li><strong>Relay overshoot</strong> -- Electromechanical relays have a disc that continues to rotate after the fault is cleared. Numerical relays have a measurement processing delay. This adds a small time to the effective operating time.</li>
+  </ul>
+
+  <p>The sum of these factors -- breaker time plus relay error plus CT error plus overshoot -- must be less than the CTI margin for the coordination to hold. A 0.3 s margin is the absolute minimum; many engineers prefer 0.4 s for additional security.</p>
+
+  <p>There are two types of protection in every coordinated scheme. <strong>Primary protection</strong> is the relay intended to clear the fault first. <strong>Backup protection</strong> is the next relay upstream, which only operates if the primary fails. Every relay in the chain is simultaneously the primary protection for its own zone and backup protection for the zone below it.</p>
+
+  <h2>Step-by-Step Process</h2>
+
+  <h3>1. Determine Fault Levels</h3>
+
+  <p>The first step in any coordination study is establishing the available fault current at each bus in the system. Without accurate fault levels, the relay settings will be based on guesswork.</p>
+
+  <p>For a transformer-fed radial system, the three-phase symmetrical fault current on each side is derived from the transformer parameters:</p>
+
+  <div class="formula-box">
+    <span class="var">I<sub>fault</sub></span> = <span class="const">MVA</span> x 1000 / ( <span class="var">kV</span> x sqrt(3) x <span class="var">Z%</span> / 100 )
+  </div>
+
+  <p>For a 10 MVA, 33/11 kV transformer with 8% impedance, the secondary-side fault current is approximately 6,561 A. This is the maximum fault current that any secondary relay will see. The actual fault current at any given moment depends on the fault location, type, and system conditions -- which is why the simulator provides a fault level slider from 5% to 100%.</p>
+
+  <p>You must also consider minimum fault levels. These occur during light load conditions or for faults at the remote end of a feeder where cable impedance reduces the available current. The relay must still operate correctly (with acceptable speed) at minimum fault levels, and coordination must hold at both extremes.</p>
+
+  <div class="note-box tip">
+    <strong>Tip:</strong> In the simulator, sweep the fault level slider from 100% down to 10% and watch the CTI brackets. Coordination often fails at low fault levels first because the relay curves converge as current approaches pickup.
+  </div>
+
+  <h3>2. Set the Downstream Relay First</h3>
+
+  <p>Always start grading from the relay closest to the load and work upstream. The downstream relay should have the <strong>fastest settings</strong> consistent with avoiding nuisance trips from normal load current, inrush current, and transient overloads.</p>
+
+  <p>Configure the downstream relay as follows:</p>
+
+  <ul>
+    <li><strong>CT ratio</strong> -- Choose a CT primary rating that is at least 1.2 to 1.5 times the maximum expected load current. A CT that is too small will saturate during faults; one that is too large will reduce sensitivity.</li>
+    <li><strong>Pickup multiplier</strong> -- Set the relay pickup (I_set = CT_primary x pickup_multiplier) above the maximum load current including any permissible overload. A typical starting point is a pickup of 1.1 to 1.3 times full load current.</li>
+    <li><strong>Curve type</strong> -- Select IEC Standard Inverse unless you have a specific reason to use another curve (see below). If the feeder has a wide fault current range, consider Very Inverse. If you need to coordinate with fuses, use Extremely Inverse.</li>
+    <li><strong>TMS</strong> -- Start with the lowest TMS that gives an acceptable trip time at maximum fault current. For a feeder relay, this might be TMS = 0.05 to 0.15, giving sub-second clearance at full fault level.</li>
+  </ul>
+
+  <p>Verify that at the maximum fault current, the relay trips within the equipment's thermal withstand limits. For cables, the relay must trip before the cable damage curve. For transformers, it must trip within the through-fault withstand time specified by the manufacturer.</p>
+
+  <h3>3. Grade the Upstream Relay</h3>
+
+  <p>Now configure the next relay upstream (the backup relay). Its settings must satisfy two constraints simultaneously:</p>
+
+  <ol>
+    <li>At the <strong>maximum fault current</strong> seen by the downstream relay, the upstream relay must operate at least CTI seconds slower than the downstream relay.</li>
+    <li>At the <strong>minimum fault current</strong> in the downstream zone, coordination must still hold.</li>
+  </ol>
+
+  <p>The process is iterative:</p>
+
+  <ol>
+    <li>Set the upstream relay's CT ratio and pickup based on its own zone's load current (which is typically higher, since it supplies the entire bus).</li>
+    <li>Choose the same curve type as the downstream relay (this simplifies coordination, though it is not strictly required).</li>
+    <li>Increase the TMS until the time margin at maximum fault current is at least 0.3 s (or 0.4 s for a more conservative study).</li>
+    <li>Check the margin at minimum fault current. If it falls below the required CTI, you may need to change curve types or adjust the pickup.</li>
+  </ol>
+
+  <p>On the TCC chart, you should see the upstream relay curve running parallel to and above the downstream curve across the entire fault current range. The vertical distance between the curves (measured in seconds) should be at least your CTI margin everywhere.</p>
+
+  <div class="note-box warning">
+    <strong>Watch out:</strong> If the upstream relay uses a flatter curve than the downstream relay, the curves may converge at high currents, reducing the CTI margin. Always check coordination at both the maximum and minimum fault levels for the zone.
+  </div>
+
+  <h3>4. Verify with Equipment Limits</h3>
+
+  <p>Relay coordination is not just about relay-to-relay margins. The protection scheme must also respect the physical limits of the equipment being protected:</p>
+
+  <ul>
+    <li><strong>Cable damage curves</strong> -- For every protected cable section, calculate the adiabatic damage time using the BS 7671 equation: t = (kS/I)^2. The relay curve must lie entirely below the cable damage curve on the TCC chart. If the relay is too slow at any fault level, the cable insulation will be damaged before the fault is cleared.</li>
+    <li><strong>Transformer withstand</strong> -- Transformers have a through-fault withstand curve (typically 2 seconds at rated fault current). The primary-side relay must clear faults within this limit. Also check that the relay does not trip on transformer inrush current, which can reach 8 to 12 times rated current for the first few cycles and decays over several seconds.</li>
+    <li><strong>Inrush discrimination</strong> -- The relay pickup and curve type should be chosen so that the relay's operating time at inrush current is longer than the inrush duration. For a Standard Inverse relay, this usually means setting the pickup above the steady-state inrush value or using a high enough TMS that the relay rides through the transient.</li>
+    <li><strong>Switchgear ratings</strong> -- Verify that the maximum fault current does not exceed the rated short-circuit capacity of the switchgear. This is not a relay setting issue, but it must be checked as part of any protection study.</li>
+  </ul>
+
+  <h3>5. Document and Export</h3>
+
+  <p>A coordination study is only useful if it is properly documented. The deliverable should include:</p>
+
+  <ul>
+    <li>A <strong>time-current characteristic chart</strong> showing all relay curves, equipment limit curves, and the fault current range. This is the primary visual output that reviewers will examine.</li>
+    <li>A <strong>settings table</strong> listing each relay's CT ratio, pickup, TMS, curve type, and trip time at key fault levels (minimum fault, maximum fault, and several intermediate points).</li>
+    <li>A <strong>CTI summary</strong> showing the minimum coordination margin between each pair of relays across the fault current range.</li>
+    <li><strong>Assumptions and notes</strong> -- Source impedance data, cable parameters, transformer nameplate data, and any engineering judgements or compromises made during the study.</li>
+  </ul>
+
+  <p>The simulator provides PDF export with a print-optimised black-and-white TCC chart, full results table, CTI analysis, and fields for company name, project title, document reference, and remarks. CSV export is also available for importing trip time data into spreadsheets.</p>
+
+  <h2>Common Pitfalls</h2>
+
+  <p>After reviewing hundreds of coordination studies, certain mistakes appear repeatedly. Being aware of them will save you from the most common errors:</p>
+
+  <ul>
+    <li><strong>Insufficient CTI at high fault levels</strong> -- The relay curves may appear well-separated at low currents but converge at high currents, especially if the upstream relay uses a flatter curve type. Always check coordination at maximum fault current, not just at one arbitrary point.</li>
+    <li><strong>Wrong CT ratio</strong> -- Selecting a CT primary that is too close to load current leaves no room for pickup setting above load. Selecting one that is too large (e.g., 2000/1 on a 200 A feeder) reduces the effective pickup current resolution and can cause sensitivity problems.</li>
+    <li><strong>Ignoring transformer inrush</strong> -- A secondary relay set with a low pickup and low TMS may trip on transformer energisation, especially with an Extremely Inverse curve that is very fast at high multiples. Either raise the pickup above the inrush envelope or use a curve type that inherently discriminates (Standard Inverse with adequate TMS).</li>
+    <li><strong>Not checking cable protection</strong> -- Coordination between relays may be perfect, but if the downstream relay cannot protect its cable at maximum fault current, the study has a critical gap. Always overlay cable damage curves and verify that the relay curve lies below them.</li>
+    <li><strong>Mixing curve types without checking</strong> -- Using an Extremely Inverse downstream relay with a Standard Inverse upstream relay creates a crossover risk. The EI curve drops rapidly at high currents and may cross below the SI curve, causing the backup relay to trip before the primary relay.</li>
+    <li><strong>Single-point verification</strong> -- Checking the CTI at one fault level and assuming it holds everywhere. Coordination must be verified across the entire operating range.</li>
+  </ul>
+
+  <h2>Try It Yourself</h2>
+
+  <p>The best way to learn coordination is by doing it. The simulator lets you set up a multi-relay scheme, adjust settings in real time, and immediately see the effect on coordination margins. Start with the default configuration -- a 10 MVA, 33/11 kV transformer with four relays -- and try grading them from secondary to primary.</p>
+
+  <a href="/" class="sim-link">
+    <span class="sim-link-icon">[Sim]</span>
+    <span class="sim-link-text">
+      <strong>Open the simulator with default configuration</strong>
+      <small>Four relays on a 10 MVA transformer -- ready for a coordination exercise</small>
+    </span>
+    <span class="sim-link-arrow">-></span>
+  </a>
+
+  <h2>Conclusion</h2>
+
+  <p>A protection coordination study is a systematic engineering process, not a creative exercise. The steps are well defined: determine fault levels, set the downstream relay first, grade upstream with adequate CTI margins, verify against equipment limits, and document everything. The complexity comes from the details -- multiple fault levels, equipment constraints, and the interaction between curve shapes.</p>
+
+  <p>The most important principle to internalise is that coordination must hold across the full range of fault currents, not just at one convenient point. A study that looks good at maximum fault current but fails at minimum fault current -- or vice versa -- is incomplete. Use the TCC chart as your primary verification tool, sweep through the fault range, and check every relay pair.</p>
+
+  <p>With practice, the process becomes intuitive. After a few studies, you will develop a feel for which curve types pair well together, which TMS values give adequate margins, and where the likely trouble spots are. The simulator accelerates this learning by giving you instant visual feedback on every change you make.</p>
+
+  <div class="docs-footer">
+    <p><a href="/blog/">Back to Blog</a></p>
+  </div>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

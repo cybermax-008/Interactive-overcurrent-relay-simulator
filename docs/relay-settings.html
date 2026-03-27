@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Complete guide to configuring IDMT overcurrent relay settings — side selection, CT primary, pickup multiplier, TMS, curve type selection, and definite time elements.">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="Relay Settings Guide — IDMT Overcurrent Relay Simulator">
+<meta property="og:description" content="How to configure relay side, CT ratio, pickup multiplier, time multiplier setting, curve types, and high-set definite time elements for overcurrent protection coordination.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/docs/relay-settings.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/docs/relay-settings.html">
+<title>Relay Settings Guide — IDMT Overcurrent Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Relay Settings Guide — IDMT Overcurrent Relay Simulator",
+  "description": "Complete guide to configuring IDMT overcurrent relay settings including side selection, CT primary, pickup multiplier, TMS, curve type selection, and definite time elements.",
+  "url": "https://power-system-tool.vercel.app/docs/relay-settings.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/docs/relay-settings.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="docs-layout">
+  <nav class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-title">Documentation</div>
+    <a href="/docs/getting-started.html" class="sidebar-link">Getting Started</a>
+    <a href="/docs/formulas.html" class="sidebar-link">Formula Reference</a>
+    <a href="/docs/relay-settings.html" class="sidebar-link active">Relay Settings</a>
+    <a href="/docs/coordination-overlays.html" class="sidebar-link">Coordination Overlays</a>
+    <a href="/docs/worked-examples.html" class="sidebar-link">Worked Examples</a>
+    <a href="/docs/export-sharing.html" class="sidebar-link">Export and Sharing</a>
+    <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+  </nav>
+
+  <main class="docs-content prose">
+    <h1>Relay Settings Guide</h1>
+
+    <p>Each relay in the simulator has several configurable parameters that determine its operating characteristic. This guide explains what each setting means physically, its valid range, and how to choose appropriate values for a coordination study.</p>
+
+    <!-- ============================================================ -->
+    <h2>Side Selection</h2>
+
+    <p>Every relay must be assigned to either the <strong>primary</strong> or <strong>secondary</strong> side of the transformer.</p>
+
+    <ul>
+      <li><strong>Primary (Pri)</strong> &mdash; The high-voltage (HV) side. Relays on this side see the primary fault current, which is derived from the transformer MVA rating and the primary voltage (e.g., 33 kV).</li>
+      <li><strong>Secondary (Sec)</strong> &mdash; The low-voltage (LV) side. Relays on this side see the secondary fault current, derived using the secondary voltage (e.g., 11 kV). Secondary fault currents are typically higher than primary because the voltage is lower.</li>
+    </ul>
+
+    <p>The side selection determines which voltage the simulator uses when computing fault current via the formula:</p>
+
+    <div class="formula-box">
+      <span class="var">I<sub>fault</sub></span> = (<span class="var">MVA</span> &times; 1000) / (<span class="var">kV<sub>side</sub></span> &times; &radic;3 &times; <span class="var">Z%</span> / 100)
+    </div>
+
+    <p>Where kV<sub>side</sub> is either the primary or secondary voltage depending on the relay's assigned side. This means two relays with identical CT, pickup, TMS, and curve settings will compute different trip times if placed on different sides, because they see different fault current magnitudes.</p>
+
+    <div class="note-box info">
+      <strong>Note:</strong> If the primary and secondary voltages are set to the same value, the simulator displays a kV mismatch warning. In a real transformer, the primary and secondary voltages must differ.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>CT Primary (Current Transformer)</h2>
+
+    <p>The CT primary value represents the rated primary current of the current transformer through which the relay is fed. In physical terms, the CT steps down high fault currents to a level the relay can measure (typically 1 A or 5 A secondary).</p>
+
+    <p>In this simulator, the CT primary is used to calculate the relay pickup current:</p>
+
+    <div class="formula-box">
+      <span class="var">I<sub>set</sub></span> = <span class="var">CT<sub>Primary</sub></span> &times; <span class="var">Pickup<sub>Multiplier</sub></span>
+    </div>
+
+    <h3>Typical Values</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>CT Primary Range</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Distribution feeders (11 kV)</td>
+          <td>100 &ndash; 600 A</td>
+        </tr>
+        <tr>
+          <td>Sub-transmission (33 kV)</td>
+          <td>200 &ndash; 1200 A</td>
+        </tr>
+        <tr>
+          <td>Transmission (132 kV+)</td>
+          <td>500 &ndash; 3000 A</td>
+        </tr>
+        <tr>
+          <td>Motor feeders</td>
+          <td>50 &ndash; 400 A</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The CT primary should be chosen so that normal load current is well within the CT rating, while the pickup current (CT primary times pickup multiplier) sits above maximum expected load current but below minimum expected fault current.</p>
+
+    <!-- ============================================================ -->
+    <h2>Pickup Multiplier</h2>
+
+    <p>The pickup multiplier defines the relay pickup current (I<sub>set</sub>) as a fraction or multiple of the CT primary rating. The simulator accepts values from <strong>0.01 to 2.0</strong>.</p>
+
+    <ul>
+      <li>A multiplier of <strong>1.0</strong> means the relay picks up at exactly the CT primary current.</li>
+      <li>A multiplier of <strong>0.5</strong> means the relay picks up at half the CT primary current, making it more sensitive to lower fault currents.</li>
+      <li>A multiplier of <strong>1.5</strong> sets the pickup above the CT primary, reducing sensitivity and avoiding operation during normal overloads.</li>
+    </ul>
+
+    <h3>Choosing the Right Value</h3>
+
+    <p><strong>Typical range: 0.5 to 1.5</strong></p>
+
+    <ul>
+      <li>Lower values (0.3 &ndash; 0.5) &mdash; More sensitive. Used on lightly loaded feeders where fault current may be only slightly above load current. Risk: nuisance tripping on transient overloads or cold load pickup.</li>
+      <li>Middle values (0.5 &ndash; 1.0) &mdash; General purpose. The pickup sits between normal load and minimum fault level, providing a reliable operating margin.</li>
+      <li>Higher values (1.0 &ndash; 1.5) &mdash; Less sensitive. Used where load current approaches the CT rating, or where high inrush currents must be tolerated without relay operation.</li>
+    </ul>
+
+    <div class="note-box warning">
+      <strong>Warning:</strong> Setting the pickup multiplier too low can cause the relay to trip on normal load currents or transformer magnetizing inrush. Always verify that I_set is comfortably above maximum load current.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>Time Multiplier Setting (TMS)</h2>
+
+    <p>The TMS is a scalar that shifts the entire IDMT curve up or down on the time axis. It appears as a direct multiplier in the trip time formula:</p>
+
+    <div class="formula-box">
+      <span class="var">t</span> = (<span class="const">k</span> / (<span class="var">M</span><sup><span class="const">alpha</span></sup> - 1) + <span class="const">beta</span>) &times; <span class="var">TMS</span>
+    </div>
+
+    <p>The simulator accepts TMS values from <strong>0.05 to 1.0</strong>:</p>
+
+    <ul>
+      <li><strong>TMS = 0.05</strong> &mdash; The fastest possible operating time. The curve sits at its lowest position on the time axis.</li>
+      <li><strong>TMS = 1.0</strong> &mdash; The slowest (highest) position. Trip times are at their maximum for any given fault current.</li>
+    </ul>
+
+    <h3>Grading with TMS</h3>
+
+    <p>TMS is the primary tool for grading (coordinating) relays in series. The downstream relay (closest to the fault) is set with a low TMS so it trips first. Each successive upstream relay uses a higher TMS to ensure it acts as backup with adequate coordination time interval (CTI).</p>
+
+    <p>For example, with three relays in a radial feeder:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Relay</th>
+          <th>Position</th>
+          <th>TMS</th>
+          <th>Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Relay 3</td>
+          <td>Downstream</td>
+          <td>0.10</td>
+          <td>Fastest &mdash; primary protection</td>
+        </tr>
+        <tr>
+          <td>Relay 2</td>
+          <td>Mid-feeder</td>
+          <td>0.25</td>
+          <td>Backup for Relay 3</td>
+        </tr>
+        <tr>
+          <td>Relay 1</td>
+          <td>Upstream</td>
+          <td>0.50</td>
+          <td>Backup for Relay 2</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The TMS values are chosen so that the time difference between adjacent relays at the maximum fault current exceeds the required CTI (typically 0.3 seconds).</p>
+
+    <!-- ============================================================ -->
+    <h2>Curve Type Selection</h2>
+
+    <p>Each relay can independently select from seven IDMT curve types (four IEC, three IEEE). The choice of curve affects how steeply trip time decreases with increasing fault current. Here is a decision guide for selecting the appropriate curve:</p>
+
+    <h3>IEC Standard Inverse (SI)</h3>
+    <p>The default and most commonly used curve worldwide. Its flat characteristic (alpha = 0.02) provides consistent trip times across a wide range of fault currents. Use SI as your starting point for general overcurrent protection on feeders, busbars, and transformer circuits where no special requirements apply.</p>
+
+    <h3>IEC Very Inverse (VI)</h3>
+    <p>Best suited for radial distribution feeders where fault current varies significantly between the source end and the remote end. The steeper curve (alpha = 1.0) naturally provides faster tripping for close-up high-current faults and slower tripping for distant low-current faults, improving discrimination without requiring large TMS differences.</p>
+
+    <h3>IEC Extremely Inverse (EI)</h3>
+    <p>Ideal for cable protection because its squared characteristic (alpha = 2.0) closely matches the adiabatic heating curve of cables and other thermally limited equipment. Also useful where extremely wide fault current variation exists between locations, as the steep curve maximizes the time difference between relay operating points.</p>
+
+    <h3>IEC Long Time Inverse (LI)</h3>
+    <p>Designed for overload protection of large motors and transformers. The very high k value (120.0) produces long trip times that tolerate starting currents and short-duration overloads. Not suitable as the primary fault protection &mdash; typically used in conjunction with a separate high-set element for fault clearing.</p>
+
+    <h3>IEEE Moderately Inverse (MI)</h3>
+    <p>The North American equivalent of a flat characteristic. Similar to IEC SI in shape (same alpha = 0.02) but with different k and a non-zero beta. Use in systems designed to IEEE C37.112 standards, common in North American utility and industrial practice.</p>
+
+    <h3>IEEE Very Inverse (VI)</h3>
+    <p>A steep IEEE curve (alpha = 2.0) with a significant beta term (0.491). The large beta provides a higher minimum operating time compared to IEC EI. Preferred in North American practice for feeders with large fault current variation.</p>
+
+    <h3>IEEE Extremely Inverse (EI)</h3>
+    <p>The steepest IEEE curve, sharing alpha = 2.0 with IEEE VI but with different k and beta values. Used for fuse-relay coordination and recloser applications in North American distribution systems, where its shape closely matches downstream fuse characteristics.</p>
+
+    <div class="note-box tip">
+      <strong>Tip:</strong> You can mix IEC and IEEE curves in the same study. This is useful when coordinating equipment from different manufacturers or when a protection scheme spans regions with different standards.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>High-Set Definite Time (DT) Element</h2>
+
+    <p>Each relay can optionally enable a definite time (DT) element that provides fast, fixed-time tripping for high-magnitude faults. This is also known as the "high-set" or "instantaneous" element.</p>
+
+    <h3>Purpose</h3>
+
+    <p>The IDMT curve alone may be too slow for severe close-up faults where the fault current is many times the pickup setting. The DT element bypasses the IDMT characteristic for these high-current faults, providing a fixed trip time regardless of how far the fault current exceeds the DT pickup.</p>
+
+    <h3>Settings</h3>
+
+    <ul>
+      <li><strong>DT Pickup Multiplier</strong> &mdash; Ranges from 1 to 50 times the CT primary. Defines the current threshold above which the DT element activates. A typical setting is 5 to 10 times the CT primary, chosen to operate only for faults close to the relay location where fault current is high.</li>
+      <li><strong>DT Delay</strong> &mdash; Ranges from 0 to 1 second. A delay of 0 seconds represents an instantaneous trip with no intentional time delay. A small delay (e.g., 0.05 to 0.1 seconds) can be used to coordinate with downstream instantaneous elements.</li>
+    </ul>
+
+    <h3>How It Works</h3>
+
+    <p>When the DT element is enabled and the fault current equals or exceeds the DT pickup threshold (CT<sub>Primary</sub> &times; DT<sub>Pickup Mul</sub>), the relay uses whichever time is shorter:</p>
+
+    <div class="formula-box">
+      <span class="var">t<sub>effective</sub></span> = min(<span class="var">t<sub>IDMT</sub></span>, <span class="var">t<sub>DT</sub></span>)
+    </div>
+
+    <p>On the log-log chart, the DT element appears as a horizontal line at the DT delay time, starting from the DT pickup current. Where this horizontal line intersects the IDMT curve is the crossover point &mdash; above that current, the DT element controls the trip time.</p>
+
+    <div class="note-box tip">
+      <strong>Tip:</strong> Use the DT element for faults close to the relay location where fault current is at its highest. Set the DT pickup above the maximum through-fault current that the downstream relay should clear, so the DT element does not interfere with downstream coordination. A common approach is to set DT pickup at 80% of the maximum fault current at the relay location, with a short time delay to coordinate with downstream instantaneous elements.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>Practical Tips</h2>
+
+    <p>The following rules of thumb help produce a well-coordinated protection scheme on the first attempt:</p>
+
+    <h3>1. Start with the Downstream Relay</h3>
+    <p>Always begin your grading study from the relay closest to the load (or fault source). Set this relay with the lowest TMS and most sensitive pickup. Then work upstream, increasing TMS at each stage to achieve the required CTI.</p>
+
+    <h3>2. Grade Upstream with 0.3s CTI</h3>
+    <p>For numerical relays with modern circuit breakers, a minimum CTI of 0.3 seconds between adjacent relays is standard practice. Check this margin at the maximum fault current that both relays see. Use the simulator's CTI display to verify &mdash; green indicates adequate margin.</p>
+
+    <h3>3. Verify Cable and Equipment Protection</h3>
+    <p>After setting the relay curves for coordination, verify that the trip time at maximum fault current is fast enough to protect the cable or equipment within its thermal withstand limit. The IEC EI curve is often preferred for cable protection because its shape approximates the cable damage characteristic.</p>
+
+    <h3>4. Check Inrush Discrimination</h3>
+    <p>Transformer magnetizing inrush current (typically 8 to 12 times rated current, decaying over 0.1 to 0.5 seconds) must not cause relay operation. Verify that the relay trip time at the inrush current level is longer than the inrush duration. The LI curve, or a higher pickup multiplier, can help with inrush discrimination.</p>
+
+    <h3>5. Use the Fault Slider to Check All Levels</h3>
+    <p>Coordination that works at 100% fault may break down at lower fault levels where curves converge. Sweep the fault percentage slider from 100% down to the minimum operating level and watch the CTI values. The worst-case CTI often occurs at a fault level between 20% and 50%.</p>
+
+    <h3>6. Document with Named Studies</h3>
+    <p>Save your coordination study with a descriptive name using the Studies panel. This allows you to compare different grading options side by side, share settings with colleagues via URL, and export the complete study as a JSON file for archival.</p>
+
+    <!-- ============================================================ -->
+    <div class="page-nav">
+      <a href="/docs/formulas.html">
+        <div class="page-nav-label">Previous</div>
+        <div class="page-nav-title">Formula Reference</div>
+      </a>
+      <a href="/docs/coordination-overlays.html" class="next">
+        <div class="page-nav-label">Next</div>
+        <div class="page-nav-title">Coordination Overlays</div>
+      </a>
+    </div>
+
+    <div class="docs-footer">
+      <p><a href="/docs/">All Documentation</a> &middot; <a href="/">Back to Simulator</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Frequently asked questions about the IDMT Overcurrent Relay Simulator — relay settings, coordination, overlays, offline use, and more.">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="FAQ — IDMT Overcurrent Relay Simulator">
+<meta property="og:description" content="Answers to common questions about relay curve selection, CTI values, overlay interpretation, offline use, and data privacy in the overcurrent relay simulator.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/docs/faq.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/docs/faq.html">
+<title>FAQ — IDMT Overcurrent Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "FAQ — IDMT Overcurrent Relay Simulator",
+  "description": "Frequently asked questions about relay settings, coordination, overlays, offline use, and data privacy in the IDMT overcurrent relay simulator.",
+  "url": "https://power-system-tool.vercel.app/docs/faq.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/docs/faq.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="docs-layout">
+  <nav class="docs-sidebar">
+    <div class="sidebar-title">Documentation</div>
+    <a href="/docs/getting-started.html" class="sidebar-link">Getting Started</a>
+    <a href="/docs/formulas.html" class="sidebar-link">Formula Reference</a>
+    <a href="/docs/relay-settings.html" class="sidebar-link">Relay Settings</a>
+    <a href="/docs/coordination-overlays.html" class="sidebar-link">Coordination Overlays</a>
+    <a href="/docs/worked-examples.html" class="sidebar-link">Worked Examples</a>
+    <a href="/docs/export-sharing.html" class="sidebar-link">Export &amp; Sharing</a>
+    <a href="/docs/faq.html" class="sidebar-link active">FAQ</a>
+  </nav>
+
+  <main class="docs-content prose">
+    <h1>Frequently Asked Questions</h1>
+
+    <h2>Relay Settings</h2>
+
+    <h3>Why does my relay show "No trip"?</h3>
+    <p>The fault current at the selected fault level is below the relay's pickup current (I_set). The relay will not operate when the operating multiple M = I_fault / I_set is less than or equal to 1. To resolve this, increase pickup sensitivity by lowering the pickup multiplier, or verify that the CT primary value is appropriate for the expected fault current range.</p>
+
+    <h3>Why does the trip time show infinity?</h3>
+    <p>This is the same condition as "No trip" -- the operating multiple M = I_fault / I_set must be greater than 1 for the IDMT formula to produce a finite trip time. When M is at or below 1, the denominator in the trip time equation approaches zero or becomes negative, resulting in an infinite or undefined result. Lower the pickup multiplier or check that your CT primary ratio matches the system fault levels.</p>
+
+    <h3>Which curve type should I select?</h3>
+    <p>The choice of curve type depends on the application:</p>
+    <ul>
+      <li><strong>Standard Inverse (SI)</strong> -- general-purpose protection, suitable for most distribution feeders</li>
+      <li><strong>Very Inverse (VI)</strong> -- feeders with widely varying fault levels, provides better discrimination at high currents</li>
+      <li><strong>Extremely Inverse (EI)</strong> -- cable protection and applications where fast clearance of high fault currents is critical</li>
+      <li><strong>Long Time Inverse (LI)</strong> -- overload protection for transformers and machines where longer operating times at moderate overcurrents are acceptable</li>
+    </ul>
+    <p>IEEE curves (Moderately Inverse, Very Inverse, Extremely Inverse) follow North American practice and have a non-zero beta constant in the trip time formula, giving slightly different characteristics at low multiples of pickup.</p>
+
+    <h3>What TMS value should I start with?</h3>
+    <p>Start with the relay closest to the load (downstream) and set its TMS to a low value, typically 0.1 to 0.2. Then grade each upstream relay in increments of 0.1 to 0.2 TMS steps. After setting all relays, verify that the coordination time interval (CTI) between each adjacent pair is at least 0.3 seconds across the full range of fault currents.</p>
+
+    <h2>Coordination</h2>
+
+    <h3>What CTI value is acceptable?</h3>
+    <p>The industry standard minimum coordination time interval is 0.3 seconds for IEC practice and 0.3 to 0.4 seconds for IEEE practice. A CTI below 0.2 seconds is generally unacceptable as it does not provide sufficient margin for relay operating tolerances, CT errors, and circuit breaker clearing time. The simulator uses color-coded indicators: green for CTI at or above 0.3 seconds, yellow for 0.2 to 0.3 seconds, and red for below 0.2 seconds.</p>
+
+    <h3>How do I coordinate relays on the same side?</h3>
+    <p>Place the faster relay downstream (closer to the fault source) with a lower TMS value and the slower relay upstream with a higher TMS value. The downstream relay should trip first for faults in its protection zone. The CTI between adjacent relays should be at least 0.3 seconds at the maximum fault current seen by the downstream relay. Use the CTI display in the simulator to verify margins across all fault levels.</p>
+
+    <h3>Why doesn't the DT element appear on the chart?</h3>
+    <p>The definite-time (DT) element will only appear on the TCC chart when two conditions are met: the DT checkbox must be enabled in the relay card, and the DT pickup current value must fall within the visible current range of the chart. If the DT pickup is set to a very high or very low value relative to the plotted current range, the DT line will be outside the visible area. Adjust the DT pickup or zoom the chart to bring it into view.</p>
+
+    <h2>Overlays</h2>
+
+    <h3>What do the dashed overlay lines mean?</h3>
+    <p>Overlay lines represent equipment limits or device characteristics, not relay operating curves. They are reference lines that help you verify coordination with other system elements:</p>
+    <ul>
+      <li><strong>Cable damage</strong> -- the maximum allowable time before the cable insulation sustains thermal damage at a given fault current</li>
+      <li><strong>Transformer withstand</strong> -- the transformer's through-fault withstand limit, representing the maximum time the transformer can carry a given fault current</li>
+      <li><strong>Transformer inrush</strong> -- the magnetizing inrush current envelope during transformer energization</li>
+      <li><strong>MCB</strong> -- miniature circuit breaker trip band, showing the expected operating range of downstream breakers</li>
+    </ul>
+
+    <h3>My relay curve is above the cable damage line -- is that a problem?</h3>
+    <p>Yes. The relay must trip faster than the cable damage time at all fault levels to protect the cable from thermal damage. If your relay curve is above (slower than) the cable damage overlay at any point, the cable could be damaged before the relay operates. To fix this, reduce the TMS to shift the relay curve downward, or select a faster curve type such as Extremely Inverse (EI) which provides faster tripping at high fault currents.</p>
+
+    <h2>General</h2>
+
+    <h3>Can I use this for real protection studies?</h3>
+    <p>This tool is designed for educational and preliminary analysis purposes. It implements the standard IEC 60255 and IEEE C37.112 IDMT curve equations accurately, but for formal protection coordination studies you should always verify settings against manufacturer relay data, confirm CT accuracy class and burden calculations, and comply with applicable utility standards and grid codes. Use this simulator as a starting point, not as the sole basis for protection settings applied to real equipment.</p>
+
+    <h3>Is my data stored on a server?</h3>
+    <p>No. All data stays entirely in your browser using localStorage. The Share URL feature encodes your full configuration directly in the link itself -- no data is uploaded to or stored on any server. No account or registration is required to use any feature of the simulator.</p>
+
+    <h3>How do I report a bug or request a feature?</h3>
+    <p>Visit the GitHub repository issue tracker at <a href="https://github.com/cybermax-008/Interactive-overcurrent-relay-simulator/issues">github.com/cybermax-008/Interactive-overcurrent-relay-simulator/issues</a> to report bugs, suggest features, or ask questions about the simulator.</p>
+
+    <h3>Does this work offline?</h3>
+    <p>Yes. After your first visit, the simulator is fully cached by a service worker and works without an internet connection. You can also install it as a progressive web app (PWA) using your browser's "Install" or "Add to Home Screen" option. All calculations run locally in your browser.</p>
+
+    <div class="page-nav">
+      <a href="/docs/export-sharing.html">
+        <div class="page-nav-label">Previous</div>
+        <div class="page-nav-title">Export &amp; Sharing</div>
+      </a>
+    </div>
+
+    <div class="docs-footer">
+      <p><a href="/docs/">All Documentation</a> · <a href="/">Back to Simulator</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

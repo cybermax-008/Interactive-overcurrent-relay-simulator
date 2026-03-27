@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Coordination overlays for the IDMT relay simulator — cable damage curves (BS 7671), transformer inrush (IEEE C37.91), through-fault withstand (ANSI C57.109), and MCB trip characteristics (IEC 60898).">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="Coordination Overlays — IDMT Overcurrent Relay Simulator">
+<meta property="og:description" content="Learn how to use cable damage curves, transformer inrush envelopes, through-fault withstand limits, and MCB characteristics to verify relay coordination on the TCC chart.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/docs/coordination-overlays.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/docs/coordination-overlays.html">
+<title>Coordination Overlays — IDMT Overcurrent Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Coordination Overlays — IDMT Overcurrent Relay Simulator",
+  "description": "Cable damage curves, transformer inrush envelopes, through-fault withstand limits, and MCB trip characteristics overlaid on the TCC chart for relay coordination verification.",
+  "url": "https://power-system-tool.vercel.app/docs/coordination-overlays.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/docs/coordination-overlays.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="docs-layout">
+  <nav class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-title">Documentation</div>
+    <a href="/docs/getting-started.html" class="sidebar-link">Getting Started</a>
+    <a href="/docs/formulas.html" class="sidebar-link">Formula Reference</a>
+    <a href="/docs/relay-settings.html" class="sidebar-link">Relay Settings</a>
+    <a href="/docs/coordination-overlays.html" class="sidebar-link active">Coordination Overlays</a>
+    <a href="/docs/worked-examples.html" class="sidebar-link">Worked Examples</a>
+    <a href="/docs/export-sharing.html" class="sidebar-link">Export &amp; Sharing</a>
+    <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+  </nav>
+
+  <main class="docs-content prose">
+    <h1>Coordination Overlays</h1>
+
+    <p>Overlays are reference curves drawn on the time-current characteristic (TCC) chart that represent equipment limits and device characteristics. They let you verify that your relay settings protect equipment within its thermal and mechanical limits, and that upstream and downstream devices coordinate correctly without nuisance tripping.</p>
+
+    <p>The simulator supports four overlay types, each based on a recognized standard. You can enable any combination simultaneously and adjust their parameters to match your installation.</p>
+
+    <!-- ============================================================ -->
+    <h2>Cable Damage Curve (BS 7671)</h2>
+
+    <p>The cable damage curve shows the maximum time a cable can carry a given fault current before its insulation reaches its damage temperature. It is derived from the adiabatic equation in BS 7671 (IEC 60364), which assumes all heat generated during the fault is retained in the conductor.</p>
+
+    <h3>Formula</h3>
+
+    <div class="formula-box">
+      <span class="var">t</span> = (<span class="var">k</span> &times; <span class="var">S</span> / <span class="var">I</span>)<sup>2</sup>
+    </div>
+
+    <p>Where:</p>
+    <ul>
+      <li><strong>t</strong> -- time in seconds the cable can withstand the fault</li>
+      <li><strong>k</strong> -- material constant that accounts for conductor and insulation type</li>
+      <li><strong>S</strong> -- cable cross-sectional area in mm<sup>2</sup></li>
+      <li><strong>I</strong> -- fault current in amperes</li>
+    </ul>
+
+    <h3>Material Constants</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Conductor</th>
+          <th>Insulation</th>
+          <th>k Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Copper</td><td>PVC</td><td>115</td></tr>
+        <tr><td>Copper</td><td>XLPE</td><td>143</td></tr>
+        <tr><td>Aluminium</td><td>PVC</td><td>76</td></tr>
+        <tr><td>Aluminium</td><td>XLPE</td><td>94</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Available Sizes</h3>
+
+    <p>The simulator offers standard cable sizes from <strong>1.5 mm<sup>2</sup></strong> up to <strong>630 mm<sup>2</sup></strong>, covering the full range of distribution and sub-transmission cables commonly found in LV and MV installations.</p>
+
+    <h3>Interpretation</h3>
+
+    <p>On the TCC chart, the cable damage curve appears as a downward-sloping line. For adequate protection, the relay trip curve must lie <strong>below</strong> the cable damage curve at every fault current level. This ensures the relay trips and clears the fault before the cable sustains insulation damage.</p>
+
+    <div class="note-box warning">
+      <strong>Warning:</strong> If the relay curve crosses above the cable damage line at any point in the fault current range, the cable is not adequately protected. You must reduce the relay TMS, lower the pickup multiplier, or select a faster curve type to bring the trip time below the damage limit.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>Transformer Inrush (IEEE C37.91)</h2>
+
+    <p>When a transformer is energized, the core draws a brief but very high magnetizing inrush current. This current decays exponentially and must not cause the protection relay to trip, otherwise the transformer cannot be put into service.</p>
+
+    <h3>Model</h3>
+
+    <p>The simulator models the inrush envelope as a decaying exponential with the following parameters:</p>
+
+    <ul>
+      <li><strong>Peak magnitude:</strong> 12 times the transformer full-load current (FLC)</li>
+      <li><strong>Time constant:</strong> tau = 0.2 s</li>
+    </ul>
+
+    <p>The full-load current is automatically computed from the transformer MVA rating and the secondary voltage:</p>
+
+    <div class="formula-box">
+      <span class="var">I</span><sub>FLC</sub> = (<span class="var">MVA</span> &times; 1000) / (<span class="var">kV</span> &times; &radic;3)
+    </div>
+
+    <p>For example, a 10 MVA transformer at 11 kV has a full-load current of approximately 525 A, producing an inrush peak of about 6300 A.</p>
+
+    <h3>Interpretation</h3>
+
+    <p>The inrush envelope appears on the TCC chart as a steep, short-duration curve in the high-current region. For correct coordination, the relay trip curve must lie <strong>above and to the right</strong> of the inrush envelope. If the relay curve intersects or falls below the inrush curve, the relay will trip during normal transformer energization.</p>
+
+    <div class="note-box tip">
+      <strong>Tip:</strong> If the relay trips on transformer energization, increase the TMS to shift the relay curve upward, or use a less sensitive pickup multiplier to shift it to the right. Switching to a less inverse curve type (e.g., from Extremely Inverse to Standard Inverse) can also help, as SI curves are slower at high multiples of pickup.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>TX Through-Fault Withstand (ANSI C57.109)</h2>
+
+    <p>The through-fault withstand curve defines the maximum time a transformer can tolerate a through-fault current (a fault on the downstream side that passes current through the transformer windings) without suffering mechanical or thermal damage.</p>
+
+    <h3>Formula</h3>
+
+    <div class="formula-box">
+      <span class="var">t</span> = <span class="var">t</span><sub>base</sub> &times; (<span class="var">I</span><sub>max</sub> / <span class="var">I</span>)<sup>2</sup>
+    </div>
+
+    <p>Where:</p>
+    <ul>
+      <li><strong>t</strong> -- maximum allowable fault duration in seconds</li>
+      <li><strong>t<sub>base</sub></strong> -- base withstand time at maximum through-fault current</li>
+      <li><strong>I<sub>max</sub></strong> -- maximum through-fault current, derived from transformer impedance</li>
+      <li><strong>I</strong> -- actual fault current in amperes</li>
+    </ul>
+
+    <h3>Fault Categories</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>t<sub>base</sub></th>
+          <th>Application</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Infrequent</td>
+          <td>2 s</td>
+          <td>Transformers subject to rare, isolated faults -- typical for well-maintained networks with low fault incidence</td>
+        </tr>
+        <tr>
+          <td>Frequent</td>
+          <td>1 s</td>
+          <td>Transformers subject to regular fault exposure -- typical for overhead lines, industrial feeders, or areas with recurrent faults</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The maximum through-fault current <strong>I<sub>max</sub></strong> is determined from the transformer impedance. For a transformer with impedance Z%, the maximum through-fault current on the secondary is the full-load current divided by Z%/100.</p>
+
+    <h3>Interpretation</h3>
+
+    <p>The through-fault withstand curve appears as a falling characteristic on the TCC chart. The relay trip curve must lie <strong>below</strong> this line, ensuring the relay clears the fault before the transformer reaches its thermal damage limit. A relay that trips slower than the through-fault withstand time leaves the transformer exposed to cumulative winding damage.</p>
+
+    <!-- ============================================================ -->
+    <h2>MCB Curves (IEC 60898)</h2>
+
+    <p>Miniature circuit breaker (MCB) trip characteristic curves show the operating time of downstream MCBs as a function of current. When an upstream IDMT relay must coordinate with a downstream MCB, the MCB curve is drawn on the TCC chart so you can verify proper time grading.</p>
+
+    <h3>MCB Types</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Magnetic Trip Range</th>
+          <th>Typical Application</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>B</td>
+          <td>3 -- 5 times rated current</td>
+          <td>Resistive loads, lighting circuits, long cable runs with low inrush</td>
+        </tr>
+        <tr>
+          <td>C</td>
+          <td>5 -- 10 times rated current</td>
+          <td>General purpose, small motors, mixed loads -- the most common type in commercial and industrial installations</td>
+        </tr>
+        <tr>
+          <td>D</td>
+          <td>10 -- 20 times rated current</td>
+          <td>High inrush loads such as large motors, transformers, X-ray machines, and welding equipment</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Trip Regions</h3>
+
+    <p>Each MCB curve has two distinct operating regions:</p>
+
+    <ul>
+      <li><strong>Thermal region (inverse-time):</strong> At currents between 1x and the magnetic trip threshold, the MCB trips via a bimetallic element with an inverse-time characteristic. Higher currents produce faster trips, similar to an IDMT relay but with a fixed, non-adjustable curve.</li>
+      <li><strong>Magnetic region (instantaneous):</strong> Above the magnetic trip threshold, the MCB trips instantaneously (typically within 10 ms) via a solenoid mechanism. This appears as a near-vertical line on the TCC chart.</li>
+    </ul>
+
+    <h3>Available Ratings</h3>
+
+    <p>The simulator supports standard MCB ratings from <strong>6 A</strong> to <strong>125 A</strong>, covering single-phase and three-phase distribution board circuits.</p>
+
+    <h3>Interpretation</h3>
+
+    <p>For correct discrimination, the upstream IDMT relay curve should sit <strong>above</strong> the MCB curve across the full operating range. This ensures the MCB clears downstream faults first, and the relay only operates if the MCB fails to clear the fault or if the fault is upstream of the MCB. The time margin between the relay curve and the top of the MCB band should meet the coordination time interval (CTI) requirement -- typically 0.3 to 0.4 seconds.</p>
+
+    <!-- ============================================================ -->
+    <h2>How to Use Overlays</h2>
+
+    <p>Follow these steps to add coordination overlays to your TCC chart:</p>
+
+    <ol>
+      <li><strong>Open the Coordination Overlays panel</strong> -- click the "Coordination Overlays" section in the simulator sidebar to expand it.</li>
+      <li><strong>Enable the desired overlay</strong> -- toggle the switch for any overlay type (cable damage, inrush, through-fault withstand, or MCB). The overlay appears immediately on the chart.</li>
+      <li><strong>Configure parameters</strong> -- set the overlay-specific parameters:
+        <ul>
+          <li>For cable damage: select conductor material, insulation type, and cross-sectional area.</li>
+          <li>For transformer inrush: parameters are derived automatically from the transformer MVA and kV settings. No additional input is needed.</li>
+          <li>For through-fault withstand: choose the fault category (Infrequent or Frequent).</li>
+          <li>For MCB: select the curve type (B, C, or D) and the MCB rating in amperes.</li>
+        </ul>
+      </li>
+      <li><strong>Check the chart for coordination</strong> -- visually inspect the TCC chart to confirm:
+        <ul>
+          <li>Relay curves are below cable damage and through-fault withstand lines.</li>
+          <li>Relay curves are above and to the right of the inrush envelope.</li>
+          <li>Upstream relay curves are above downstream MCB bands with adequate CTI margin.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p>You can enable multiple overlays at the same time. The chart legend identifies each overlay by name and line style so they remain distinguishable even with several relay curves displayed simultaneously.</p>
+
+    <!-- ============================================================ -->
+
+    <div class="page-nav">
+      <a href="/docs/relay-settings.html">
+        <div class="page-nav-label">Previous</div>
+        <div class="page-nav-title">Relay Settings</div>
+      </a>
+      <a href="/docs/worked-examples.html" class="next">
+        <div class="page-nav-label">Next</div>
+        <div class="page-nav-title">Worked Examples</div>
+      </a>
+    </div>
+
+    <div class="docs-footer">
+      <p><a href="/docs/">All Documentation</a> &middot; <a href="/">Back to Simulator</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

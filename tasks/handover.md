@@ -131,9 +131,19 @@
 - **All consumers updated:** legend, tooltip, PDF export with overlay table, URL sharing v2, studies, state migration
 - Build output: 50.1 KB JS + 19.5 KB CSS (16.0 KB + 4.2 KB gzipped) — 15 modules
 
+### Documentation & Blog Site
+- **Vite multi-page app:** 14 entry points (simulator + 8 docs + 5 blog), same build/deployment
+- **Self-contained nav bar:** `docs-nav.js` injects CSS + HTML on all pages (Simulator/Docs/Blog)
+- **Docs pages:** Hub, Getting Started, Formula Reference, Relay Settings, Coordination Overlays, Worked Examples, Export & Sharing, FAQ
+- **Blog posts:** IDMT curves intro, coordination study guide, IEC vs IEEE comparison, cable protection BS 7671
+- **SEO:** Unique title/description/OG/JSON-LD per page, clean URLs via Vercel
+- **Dark theme docs:** `docs.css` with prose typography, sidebar, cards, formula boxes, sim-link deep-links
+- Build output: 30 modules, 28 precached PWA entries
+
 ## Next steps
 1. **Motor starting curve overlay** (Sprint 7.3 — starting current 6-8× FLC, locked rotor thermal limit)
 2. **Fuse TCC curves** (Sprint 7.1 — BS 88/IEC 60269, requires digitized lookup data)
+3. **Deep-link generation** — Create encoded simulator URLs for worked examples in docs
 
 ## Gotchas / things to watch
 - `chart.js` is the largest module (~500 lines) — could be further decomposed later

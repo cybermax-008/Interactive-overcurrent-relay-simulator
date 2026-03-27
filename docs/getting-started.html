@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Getting started with the IDMT Overcurrent Relay Simulator — set transformer parameters, configure relays, read the TCC chart, and export your coordination study.">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="Getting Started — IDMT Overcurrent Relay Simulator">
+<meta property="og:description" content="A step-by-step guide to your first protection coordination study using the IDMT relay simulator with IEC 60255 and IEEE C37.112 curves.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/docs/getting-started.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/docs/getting-started.html">
+<title>Getting Started — IDMT Overcurrent Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Getting Started — IDMT Overcurrent Relay Simulator",
+  "description": "A step-by-step guide to configuring transformer parameters, relay settings, and coordination analysis using the IDMT overcurrent relay simulator.",
+  "url": "https://power-system-tool.vercel.app/docs/getting-started.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/docs/getting-started.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <div class="sidebar-title">Documentation</div>
+    <a href="/docs/getting-started.html" class="sidebar-link active">Getting Started</a>
+    <a href="/docs/formulas.html" class="sidebar-link">Formula Reference</a>
+    <a href="/docs/relay-settings.html" class="sidebar-link">Relay Settings</a>
+    <a href="/docs/coordination-overlays.html" class="sidebar-link">Coordination Overlays</a>
+    <a href="/docs/worked-examples.html" class="sidebar-link">Worked Examples</a>
+    <a href="/docs/export-sharing.html" class="sidebar-link">Export and Sharing</a>
+    <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+  </aside>
+
+  <main class="docs-content prose">
+    <h1>Getting Started</h1>
+
+    <p>The IDMT Overcurrent Relay Simulator lets you model inverse definite minimum time relay curves on a time-current characteristic (TCC) chart. You define a transformer, set up one or more relays on its primary or secondary side, and immediately see how each relay responds to fault current. The entire workflow runs in your browser with no server calls, no login, and no installation required.</p>
+
+    <p>This guide walks you through the five core steps: entering transformer data, configuring a relay, reading the log-log chart, coordinating multiple relays, and exporting your finished study. By the end you will have a working coordination study you can share or print.</p>
+
+    <a href="/" class="sim-link">
+      <span class="sim-link-icon">[Sim]</span>
+      <span class="sim-link-text">
+        <strong>Try the default configuration</strong>
+        <small>Opens the simulator with a 10 MVA, 33/11 kV transformer and four pre-configured relays</small>
+      </span>
+      <span class="sim-link-arrow">-></span>
+    </a>
+
+    <h2>Step 1 -- Set Transformer Parameters</h2>
+
+    <p>Open the simulator and locate the <strong>Transformer</strong> panel at the top of the left-hand column. This panel contains four fields that define the power system source:</p>
+
+    <ul>
+      <li><strong>MVA</strong> -- The transformer rated apparent power in megavolt-amperes. This scales the available fault current. A larger transformer supplies more fault current at the same impedance.</li>
+      <li><strong>Primary kV</strong> -- The high-voltage winding line-to-line voltage in kilovolts (e.g. 33 kV, 66 kV, 132 kV).</li>
+      <li><strong>Secondary kV</strong> -- The low-voltage winding line-to-line voltage (e.g. 11 kV, 6.6 kV, 0.415 kV).</li>
+      <li><strong>Z%</strong> -- The transformer impedance as a percentage on its own MVA base. Typical values range from 4% for small distribution transformers to 12% or more for larger units. A lower Z% means higher available fault current.</li>
+    </ul>
+
+    <p>From these four values the simulator derives the three-phase symmetrical fault current on each side using the formula:</p>
+
+    <div class="formula-box">
+      <span class="var">I<sub>fault</sub></span> = <span class="const">MVA</span> x 1000 / ( <span class="var">kV</span> x sqrt(3) x <span class="var">Z%</span> / 100 )
+    </div>
+
+    <p>For the default 10 MVA, 33/11 kV, 8% impedance transformer this gives a primary fault level of approximately 2,187 A and a secondary fault level of approximately 6,561 A at 100% fault. You will see these values update instantly in the <strong>Results</strong> panel as you change any transformer field.</p>
+
+    <div class="note-box tip">
+      <strong>Tip:</strong> If the primary and secondary kV values do not form a valid ratio for the chosen transformer, a warning banner will appear. Double-check that your voltages correspond to the same transformer winding pair.
+    </div>
+
+    <h2>Step 2 -- Configure Your First Relay</h2>
+
+    <p>Below the transformer panel you will find the <strong>Relay Cards</strong>. The simulator starts with four relays, but you can remove relays down to one or add up to eight using the <strong>Add Relay</strong> and remove buttons. Each relay card contains the following settings:</p>
+
+    <ul>
+      <li><strong>Label</strong> -- A free-text name displayed in the chart legend and results table. Use descriptive names like "Primary OC1" or "Feeder Backup" so your study is easy to read.</li>
+      <li><strong>Side</strong> -- Select <strong>Primary</strong> or <strong>Secondary</strong> from the dropdown. This determines which voltage level (and therefore which fault current magnitude) the relay sees. Changing a relay's side recalculates its operating current immediately.</li>
+      <li><strong>CT Primary</strong> -- The current transformer primary rating in amperes. This is the full-load current that produces 1 A (or 5 A) secondary on the CT. Typical values might be 200 A for a primary-side relay or 600 A for a secondary-side relay.</li>
+      <li><strong>Pickup Multiplier</strong> -- The relay pickup current expressed as a multiple of the CT primary. The actual pickup (setting) current is <code>I_set = CT_Primary x Pickup_Multiplier</code>. A value of 0.50 on a 200 A CT means the relay picks up at 100 A. The minimum is 0.01.</li>
+      <li><strong>TMS</strong> -- The Time Multiplier Setting controls how fast the relay trips along its chosen curve. Lower TMS values give faster tripping. The range is 0.05 to 1.0. Use the slider or type a value directly.</li>
+      <li><strong>Curve Type</strong> -- Choose from seven IDMT curve types: four IEC 60255 curves (Standard Inverse, Very Inverse, Extremely Inverse, Long Time Inverse) and three IEEE C37.112 curves (Moderately Inverse, Very Inverse, Extremely Inverse). Each curve has different steepness and shape, affecting how the relay responds to different fault magnitudes.</li>
+      <li><strong>Enabled</strong> -- The toggle switch at the top of each card. Disabled relays are hidden from the chart and results but their settings are preserved so you can re-enable them later.</li>
+    </ul>
+
+    <p>Start with a single enabled relay. Set it to the secondary side, CT Primary 600 A, Pickup Multiplier 0.50, TMS 0.20, and IEC Standard Inverse. You should see a single curve appear on the chart immediately.</p>
+
+    <h2>Step 3 -- Read the Chart</h2>
+
+    <p>The main chart is a <strong>log-log time-current characteristic</strong> (TCC) diagram. The horizontal axis is fault current in amperes (log scale) and the vertical axis is operating time in seconds (log scale). Every enabled relay draws a curve showing its trip time across the range of possible fault currents.</p>
+
+    <p>Key elements on the chart:</p>
+
+    <ul>
+      <li><strong>Relay curves</strong> -- Each relay is drawn in a distinct color matching its card border. The curve starts just above the relay's pickup current and extends to the maximum plotted fault level. Steeper curves (Extremely Inverse) drop faster at high currents; flatter curves (Standard Inverse) maintain a more gradual slope.</li>
+      <li><strong>Fault current line</strong> -- A vertical dashed line marks the current fault level as set by the <strong>Fault Level</strong> slider (5% to 100%). Where each relay curve intersects this line is that relay's operating time at the selected fault.</li>
+      <li><strong>Operating points</strong> -- Colored markers on each curve at the fault current line show the exact trip time. These values are also displayed numerically in the Results panel.</li>
+      <li><strong>CTI brackets</strong> -- When two or more relays are enabled, the chart draws time interval brackets between adjacent operating points. These show the coordination time interval (CTI) -- the margin between successive relay operations.</li>
+    </ul>
+
+    <p>Hover your mouse (or tap on mobile) over any point on a curve to see a tooltip with the exact current and time values. The chart auto-scales its axes to fit all visible curves, but always maintains a sensible range so you can read the gridlines.</p>
+
+    <p>Below the chart, the <strong>Results Table</strong> shows trip times for every enabled relay at fault levels from 10% to 100% in 10% steps. This gives you a quick numeric overview without needing to read values off the chart manually.</p>
+
+    <h2>Step 4 -- Coordinate Multiple Relays</h2>
+
+    <p>Protection coordination means ensuring that the relay closest to a fault trips first, while backup relays trip with a deliberate time delay. The standard practice is to maintain a <strong>coordination time interval</strong> (CTI) of 0.3 to 0.4 seconds between successive relay pairs.</p>
+
+    <p>To set up a coordinated scheme:</p>
+
+    <ol>
+      <li><strong>Enable two or more relays</strong> on the same or different sides. A typical arrangement has one or two relays on the secondary (closer to the load) and one or two on the primary (backup).</li>
+      <li><strong>Set the downstream relay</strong> (closest to the fault) with a lower TMS so it trips fastest. For example, a secondary relay at TMS 0.10.</li>
+      <li><strong>Set the upstream relay</strong> (backup) with a higher TMS so it trips after the downstream relay plus the CTI margin. For example, a primary relay at TMS 0.30.</li>
+      <li><strong>Adjust the Fault Level slider</strong> to sweep from low faults to maximum fault current. Watch the CTI brackets on the chart -- they should remain above your minimum acceptable margin (typically 0.3 s) across the full fault range.</li>
+      <li><strong>Check the CTI summary</strong> panel below the results. It reports the minimum CTI between each relay pair, highlighting any pairs that fall below the 0.3 s threshold.</li>
+    </ol>
+
+    <p>If the CTI is too small at high fault currents, increase the TMS on the upstream relay. If it is too large, you may be able to reduce the upstream TMS for faster fault clearance. Changing the curve type also affects coordination: Very Inverse and Extremely Inverse curves provide better discrimination at high fault currents because their trip times drop more steeply.</p>
+
+    <div class="note-box warning">
+      <strong>Note:</strong> The simulator uses the IDMT operating time only. In a real protection scheme you must also account for circuit breaker operating time, CT errors, relay timing errors, and any overshoot time when determining your CTI margin.
+    </div>
+
+    <h2>Step 5 -- Export Your Study</h2>
+
+    <p>Once you are satisfied with the coordination, the simulator offers several ways to save and share your work:</p>
+
+    <ul>
+      <li><strong>PDF Export</strong> -- Click the <strong>Export PDF</strong> button in the Report Settings section. The generated PDF includes a black-and-white version of the TCC chart (suitable for printing), the full results table, CTI analysis, and any report metadata you entered (company name, project title, document reference, remarks).</li>
+      <li><strong>CSV Export</strong> -- Click <strong>Export CSV</strong> to download the trip time table as a comma-separated file. This is useful for importing into spreadsheets or other engineering tools for further analysis.</li>
+      <li><strong>Share URL</strong> -- Click <strong>Share</strong> to generate a URL that encodes the entire simulator state (transformer data, all relay settings, fault level). Anyone who opens this link will see exactly the same configuration. This is the fastest way to send a study to a colleague.</li>
+      <li><strong>Named Studies</strong> -- Use the <strong>Studies</strong> panel to save the current configuration under a name. You can load, rename, delete, import, and export studies as JSON files. This is ideal for maintaining a library of standard coordination settings for different substations or feeders.</li>
+    </ul>
+
+    <p>Your settings are also automatically saved to your browser's local storage, so if you close the tab and return later, the simulator will restore your last configuration.</p>
+
+    <h2>Next Steps</h2>
+
+    <p>Now that you have a working study, explore these topics to deepen your understanding:</p>
+
+    <ul>
+      <li><a href="/docs/formulas.html">Formula Reference</a> -- Detailed breakdown of the IEC and IEEE trip time equations, curve constants, and how M (the current multiple) affects operating time.</li>
+      <li><a href="/docs/worked-examples.html">Worked Examples</a> -- Step-by-step scenarios including a typical 33/11 kV substation coordination study, feeder backup protection, and grading across different curve families.</li>
+      <li><a href="/docs/relay-settings.html">Relay Settings</a> -- Deep dive into CT selection, pickup multiplier choices, definite time elements, and how each parameter shifts the relay curve.</li>
+    </ul>
+
+    <div class="page-nav">
+      <a href="/docs/">
+        <div class="page-nav-label">Previous</div>
+        <div class="page-nav-title">Documentation Hub</div>
+      </a>
+      <a href="/docs/formulas.html" class="next">
+        <div class="page-nav-label">Next</div>
+        <div class="page-nav-title">Formula Reference</div>
+      </a>
+    </div>
+
+    <div class="docs-footer">
+      <p><a href="/">Back to Simulator</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

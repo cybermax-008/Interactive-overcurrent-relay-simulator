@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Export PDF reports, download CSV data, share relay configurations via URL, and manage named studies in the IDMT Overcurrent Relay Simulator.">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="Export &amp; Sharing — IDMT Overcurrent Relay Simulator">
+<meta property="og:description" content="PDF export, CSV download, URL sharing, named studies, report settings, and offline PWA usage for the overcurrent relay simulator.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/docs/export-sharing.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/docs/export-sharing.html">
+<title>Export &amp; Sharing — IDMT Overcurrent Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Export & Sharing — IDMT Overcurrent Relay Simulator",
+  "description": "PDF export, CSV download, URL sharing, named studies, report settings, and offline PWA usage for the overcurrent relay simulator.",
+  "url": "https://power-system-tool.vercel.app/docs/export-sharing.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/docs/export-sharing.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="docs-layout">
+  <nav class="docs-sidebar">
+    <div class="sidebar-title">Documentation</div>
+    <a href="/docs/getting-started.html" class="sidebar-link">Getting Started</a>
+    <a href="/docs/formulas.html" class="sidebar-link">Formula Reference</a>
+    <a href="/docs/relay-settings.html" class="sidebar-link">Relay Settings</a>
+    <a href="/docs/coordination-overlays.html" class="sidebar-link">Coordination Overlays</a>
+    <a href="/docs/worked-examples.html" class="sidebar-link">Worked Examples</a>
+    <a href="/docs/export-sharing.html" class="sidebar-link active">Export &amp; Sharing</a>
+    <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+  </nav>
+
+  <main class="docs-content prose">
+    <h1>Export &amp; Sharing</h1>
+
+    <p>The simulator provides several ways to save, export, and share your relay coordination studies. Everything runs locally in your browser -- no server uploads, no accounts required.</p>
+
+    <h2>PDF Export</h2>
+
+    <p>Click the <strong>PDF</strong> button to generate a print-friendly view of your current study. The PDF output includes:</p>
+
+    <ul>
+      <li>A high-resolution black-and-white TCC (time-current characteristic) chart, optimized for print</li>
+      <li>Transformer parameters (MVA, primary/secondary kV, impedance)</li>
+      <li>Relay settings table with all columns: side, CT primary, pickup multiplier, TMS, definite-time pickup, DT delay, curve type, and label</li>
+      <li>Trip time table showing calculated trip times at every fault level from 10% to 100%</li>
+      <li>CTI coordination margins table between adjacent relay pairs</li>
+      <li>Overlay curves table (if any overlay curves are enabled)</li>
+      <li>Remarks field content</li>
+    </ul>
+
+    <p>Use your browser's <strong>Print</strong> or <strong>Save as PDF</strong> dialog to save the output. If you have filled in the Report Settings fields (company name, project reference, etc.), these appear in the report header for a professional-quality document.</p>
+
+    <h2>CSV Export</h2>
+
+    <p>Click the <strong>CSV</strong> button to download a comma-separated values file containing the fault level data from your study. The CSV columns are:</p>
+
+    <ul>
+      <li><strong>Fault %</strong> -- the fault level as a percentage of full-load current</li>
+      <li><strong>Primary Fault (A)</strong> -- the calculated primary-side fault current in amperes</li>
+      <li><strong>Secondary Fault (A)</strong> -- the calculated secondary-side fault current in amperes</li>
+      <li>Per-relay columns for <strong>Trip Time (s)</strong> and <strong>Fault Current (A)</strong></li>
+    </ul>
+
+    <p>Import the CSV into Excel, Google Sheets, or MATLAB for further analysis, custom charting, or integration with other protection coordination tools.</p>
+
+    <h2>URL Sharing</h2>
+
+    <p>Click the <strong>Share</strong> button to copy a link containing your full simulator configuration encoded directly in the URL. Send this link to colleagues via email, chat, or any other channel.</p>
+
+    <p>When the recipient opens the link, the simulator loads with your exact settings: all relay parameters, transformer data, overlay selections, fault level position, and remarks. The link is entirely self-contained -- no account or login is needed to view it.</p>
+
+    <p>After loading a shared URL, the configuration parameter is automatically cleaned from the browser address bar to keep the URL tidy.</p>
+
+    <h2>Named Studies</h2>
+
+    <p>Save your relay configurations as named studies for quick retrieval later:</p>
+
+    <ul>
+      <li><strong>Save:</strong> Click "Save Current" in the Studies panel and enter a descriptive name for the study</li>
+      <li><strong>Load:</strong> Click a study name in the list to restore that full configuration</li>
+      <li><strong>Delete:</strong> Click the X button next to a study to remove it</li>
+      <li><strong>Export:</strong> Click "Export All" to download every saved study as a single JSON file</li>
+      <li><strong>Import:</strong> Click "Import JSON" to load studies from a previously exported file -- useful for backups or sharing multiple configurations between machines</li>
+    </ul>
+
+    <p>Studies are stored in your browser's local storage. They persist across sessions but are specific to the browser and device you are using. Use Export/Import to transfer studies between devices.</p>
+
+    <h2>Report Settings</h2>
+
+    <p>The Report Settings section provides optional fields that appear in the header of PDF exports:</p>
+
+    <ul>
+      <li><strong>Company Name</strong></li>
+      <li><strong>Project Reference</strong></li>
+      <li><strong>Document Reference</strong></li>
+      <li><strong>Revision</strong></li>
+    </ul>
+
+    <p>Fill these fields in before exporting to generate professional reports with proper document identification. These values are also saved as part of your study configuration when using Named Studies or URL Sharing.</p>
+
+    <h2>Offline Use (PWA)</h2>
+
+    <p>The simulator works offline after your first visit. A service worker caches all required assets so that the full application is available without an internet connection.</p>
+
+    <p>You can install the simulator as a standalone app on your device using your browser's "Install" or "Add to Home Screen" option. Once installed, it launches like a native application with its own window and icon.</p>
+
+    <p>All calculations run entirely in your browser -- no data is ever sent to any server. Your relay settings, studies, and report preferences remain private on your device.</p>
+
+    <div class="page-nav">
+      <a href="/docs/worked-examples.html">
+        <div class="page-nav-label">Previous</div>
+        <div class="page-nav-title">Worked Examples</div>
+      </a>
+      <a href="/docs/faq.html" class="next">
+        <div class="page-nav-label">Next</div>
+        <div class="page-nav-title">FAQ</div>
+      </a>
+    </div>
+
+    <div class="docs-footer">
+      <p><a href="/docs/">All Documentation</a> · <a href="/">Back to Simulator</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

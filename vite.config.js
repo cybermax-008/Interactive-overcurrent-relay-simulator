@@ -1,10 +1,29 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { resolve } from 'path';
 
 export default defineConfig({
   root: '.',
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        docsIndex: resolve(__dirname, 'docs/index.html'),
+        docsGettingStarted: resolve(__dirname, 'docs/getting-started.html'),
+        docsFormulas: resolve(__dirname, 'docs/formulas.html'),
+        docsRelaySettings: resolve(__dirname, 'docs/relay-settings.html'),
+        docsOverlays: resolve(__dirname, 'docs/coordination-overlays.html'),
+        docsExamples: resolve(__dirname, 'docs/worked-examples.html'),
+        docsExport: resolve(__dirname, 'docs/export-sharing.html'),
+        docsFaq: resolve(__dirname, 'docs/faq.html'),
+        blogIndex: resolve(__dirname, 'blog/index.html'),
+        blogIdmt: resolve(__dirname, 'blog/idmt-overcurrent-relay-curves.html'),
+        blogCoordination: resolve(__dirname, 'blog/protection-coordination-study.html'),
+        blogIecIeee: resolve(__dirname, 'blog/iec-60255-vs-ieee-c37112.html'),
+        blogCable: resolve(__dirname, 'blog/cable-protection-bs7671.html'),
+      },
+    },
   },
   plugins: [
     VitePWA({

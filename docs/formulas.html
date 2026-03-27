@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Complete formula reference for IEC 60255 and IEEE C37.112 IDMT overcurrent relay curves, including all curve constants, fault current derivation, and coordination time intervals.">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="Formula Reference — IDMT Overcurrent Relay Simulator">
+<meta property="og:description" content="IEC 60255 and IEEE C37.112 IDMT curve equations, constants, derived quantities, definite time elements, and coordination time interval definitions.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/docs/formulas.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/docs/formulas.html">
+<title>Formula Reference — IDMT Overcurrent Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Formula Reference — IDMT Overcurrent Relay Simulator",
+  "description": "Complete formula reference for IEC 60255 and IEEE C37.112 IDMT overcurrent relay curves, including all curve constants, fault current derivation, and coordination time intervals.",
+  "url": "https://power-system-tool.vercel.app/docs/formulas.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/docs/formulas.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="docs-layout">
+  <nav class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-title">Documentation</div>
+    <a href="/docs/getting-started.html" class="sidebar-link">Getting Started</a>
+    <a href="/docs/formulas.html" class="sidebar-link active">Formula Reference</a>
+    <a href="/docs/relay-settings.html" class="sidebar-link">Relay Settings</a>
+    <a href="/docs/coordination-overlays.html" class="sidebar-link">Coordination Overlays</a>
+    <a href="/docs/worked-examples.html" class="sidebar-link">Worked Examples</a>
+    <a href="/docs/export-sharing.html" class="sidebar-link">Export and Sharing</a>
+    <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+  </nav>
+
+  <main class="docs-content prose">
+    <h1>Formula Reference</h1>
+
+    <p>This page documents every equation the simulator uses to compute trip times, fault currents, and coordination intervals. All constants match the values defined in <code>constants.js</code> and conform to IEC 60255 and IEEE C37.112 standards.</p>
+
+    <!-- ============================================================ -->
+    <h2>The General IDMT Formula</h2>
+
+    <p>Inverse Definite Minimum Time (IDMT) relays use a single general equation that covers both IEC and IEEE curve families:</p>
+
+    <div class="formula-box">
+      <span class="var">t</span> = (<span class="const">k</span> / (<span class="var">M</span><sup><span class="const">alpha</span></sup> - 1) + <span class="const">beta</span>) &times; <span class="var">TMS</span>
+    </div>
+
+    <p>Where:</p>
+    <ul>
+      <li><strong>t</strong> &mdash; trip time in seconds</li>
+      <li><strong>M</strong> &mdash; the operating multiple, defined as <span class="formula-box" style="display:inline;padding:4px 8px;margin:0;font-size:0.85rem;"><span class="var">M</span> = <span class="var">I<sub>fault</sub></span> / <span class="var">I<sub>set</sub></span></span></li>
+      <li><strong>k</strong> &mdash; curve constant (time multiplier numerator)</li>
+      <li><strong>alpha</strong> &mdash; curve constant (exponent)</li>
+      <li><strong>beta</strong> &mdash; additive constant (zero for IEC curves, non-zero for IEEE curves)</li>
+      <li><strong>TMS</strong> &mdash; Time Multiplier Setting (user-adjustable, 0.05 to 1.0)</li>
+    </ul>
+
+    <p>The relay only operates when M &gt; 1, meaning the fault current exceeds the pickup setting. As M increases, trip time decreases &mdash; this is the fundamental "inverse" characteristic. The curve shape is controlled entirely by the three constants k, alpha, and beta.</p>
+
+    <!-- ============================================================ -->
+    <h2>IEC 60255 Curves</h2>
+
+    <p>IEC 60255 defines four standard IDMT curve types. All IEC curves have <strong>beta = 0</strong>, which simplifies the general formula to:</p>
+
+    <div class="formula-box">
+      <span class="var">t</span> = (<span class="const">k</span> / (<span class="var">M</span><sup><span class="const">alpha</span></sup> - 1)) &times; <span class="var">TMS</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Curve</th>
+          <th>Full Name</th>
+          <th>k</th>
+          <th>alpha</th>
+          <th>beta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SI</td>
+          <td>Standard Inverse</td>
+          <td>0.14</td>
+          <td>0.02</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>VI</td>
+          <td>Very Inverse</td>
+          <td>13.5</td>
+          <td>1.0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>EI</td>
+          <td>Extremely Inverse</td>
+          <td>80.0</td>
+          <td>2.0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>LI</td>
+          <td>Long Time Inverse</td>
+          <td>120.0</td>
+          <td>1.0</td>
+          <td>0</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Curve Characteristics</h3>
+
+    <p><strong>Standard Inverse (SI)</strong> &mdash; The most widely used curve worldwide. Its very low alpha value (0.02) means the trip time changes only moderately as fault current increases. This gives a relatively flat characteristic that is well-suited to general-purpose overcurrent protection where fault levels do not vary dramatically across the network.</p>
+
+    <p><strong>Very Inverse (VI)</strong> &mdash; With alpha = 1.0, trip time decreases much more steeply with increasing fault current. This curve is preferred on distribution feeders and radial networks where fault current magnitude drops significantly with distance from the source, allowing better discrimination between upstream and downstream relays.</p>
+
+    <p><strong>Extremely Inverse (EI)</strong> &mdash; The steepest standard IEC curve (alpha = 2.0). Trip time falls off rapidly at high fault currents. This characteristic is commonly used for cable protection, where the thermal withstand time of cables follows a similar squared relationship. It also provides excellent discrimination where there is a large variation in fault current between relay locations.</p>
+
+    <p><strong>Long Time Inverse (LI)</strong> &mdash; Shares the same alpha as VI (1.0) but has a much larger k constant (120.0 vs 13.5), resulting in significantly longer trip times. Designed for overload protection of large motors and transformers where short-duration overcurrents (such as starting currents) must be tolerated without nuisance tripping.</p>
+
+    <!-- ============================================================ -->
+    <h2>IEEE C37.112 Curves</h2>
+
+    <p>IEEE C37.112 defines three IDMT curve types used primarily in North American practice. The key difference from IEC curves is that <strong>beta &gt; 0</strong>, which introduces an additive constant inside the TMS bracket:</p>
+
+    <div class="formula-box">
+      <span class="var">t</span> = (<span class="const">k</span> / (<span class="var">M</span><sup><span class="const">alpha</span></sup> - 1) + <span class="const">beta</span>) &times; <span class="var">TMS</span>
+    </div>
+
+    <p>The beta term means that even at very high multiples of pickup, the trip time does not tend to zero but instead approaches beta &times; TMS as a lower asymptote. This provides a built-in minimum operating time that some utilities consider a safety advantage.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Curve</th>
+          <th>Full Name</th>
+          <th>k</th>
+          <th>alpha</th>
+          <th>beta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>MI</td>
+          <td>Moderately Inverse</td>
+          <td>0.0515</td>
+          <td>0.02</td>
+          <td>0.114</td>
+        </tr>
+        <tr>
+          <td>VI</td>
+          <td>Very Inverse</td>
+          <td>19.61</td>
+          <td>2.0</td>
+          <td>0.491</td>
+        </tr>
+        <tr>
+          <td>EI</td>
+          <td>Extremely Inverse</td>
+          <td>28.2</td>
+          <td>2.0</td>
+          <td>0.1217</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Note that IEEE MI shares the same alpha (0.02) as IEC SI, making it a relatively flat curve. IEEE VI and EI both use alpha = 2.0, giving steep characteristics similar to IEC EI, but their different k and beta values produce distinct time-current profiles.</p>
+
+    <!-- ============================================================ -->
+    <h2>All Curves Comparison</h2>
+
+    <p>The following table places all seven supported curves side by side for quick reference:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Standard</th>
+          <th>Full Name</th>
+          <th>k</th>
+          <th>alpha</th>
+          <th>beta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IEC_SI</td>
+          <td>IEC 60255</td>
+          <td>Standard Inverse</td>
+          <td>0.14</td>
+          <td>0.02</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>IEC_VI</td>
+          <td>IEC 60255</td>
+          <td>Very Inverse</td>
+          <td>13.5</td>
+          <td>1.0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>IEC_EI</td>
+          <td>IEC 60255</td>
+          <td>Extremely Inverse</td>
+          <td>80.0</td>
+          <td>2.0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>IEC_LI</td>
+          <td>IEC 60255</td>
+          <td>Long Time Inverse</td>
+          <td>120.0</td>
+          <td>1.0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>IEEE_MI</td>
+          <td>IEEE C37.112</td>
+          <td>Moderately Inverse</td>
+          <td>0.0515</td>
+          <td>0.02</td>
+          <td>0.114</td>
+        </tr>
+        <tr>
+          <td>IEEE_VI</td>
+          <td>IEEE C37.112</td>
+          <td>Very Inverse</td>
+          <td>19.61</td>
+          <td>2.0</td>
+          <td>0.491</td>
+        </tr>
+        <tr>
+          <td>IEEE_EI</td>
+          <td>IEEE C37.112</td>
+          <td>Extremely Inverse</td>
+          <td>28.2</td>
+          <td>2.0</td>
+          <td>0.1217</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ============================================================ -->
+    <h2>Derived Quantities</h2>
+
+    <p>The IDMT formula requires three derived values that the simulator computes from user inputs.</p>
+
+    <h3>Pickup Current (I_set)</h3>
+
+    <p>The relay pickup current is the product of the CT primary rating and the pickup multiplier:</p>
+
+    <div class="formula-box">
+      <span class="var">I<sub>set</sub></span> = <span class="var">CT<sub>Primary</sub></span> &times; <span class="var">Pickup<sub>Multiplier</sub></span>
+    </div>
+
+    <p>For example, a CT primary of 600 A with a pickup multiplier of 0.5 gives I<sub>set</sub> = 300 A. The relay will not operate for currents below this threshold.</p>
+
+    <h3>Fault Current (I_fault)</h3>
+
+    <p>Fault current on either side of the transformer is derived from the transformer nameplate parameters:</p>
+
+    <div class="formula-box">
+      <span class="var">I<sub>fault</sub></span> = (<span class="var">MVA</span> &times; 1000) / (<span class="var">kV</span> &times; &radic;3 &times; <span class="var">Z%</span> / 100)
+    </div>
+
+    <p>Where MVA is the transformer rating, kV is the nominal voltage on the relevant side (primary or secondary), and Z% is the impedance percentage. The fault percentage slider (5&ndash;100%) scales this value linearly to simulate faults at various severity levels.</p>
+
+    <h3>Operating Multiple (M)</h3>
+
+    <p>The ratio of actual fault current to relay pickup current:</p>
+
+    <div class="formula-box">
+      <span class="var">M</span> = <span class="var">I<sub>fault</sub></span> / <span class="var">I<sub>set</sub></span>
+    </div>
+
+    <p>M must be greater than 1.0 for the relay to operate. The simulator reports M alongside each relay's trip time in the results panel. Higher M values produce shorter trip times on the IDMT curve.</p>
+
+    <!-- ============================================================ -->
+    <h2>Definite Time (DT) Element</h2>
+
+    <p>In addition to the IDMT characteristic, each relay can enable a high-set definite time element. This provides fast, fixed-time tripping for high-magnitude faults close to the relay location.</p>
+
+    <p>The DT element has its own pickup threshold:</p>
+
+    <div class="formula-box">
+      <span class="var">DT<sub>pickup</sub></span> = <span class="var">CT<sub>Primary</sub></span> &times; <span class="var">DT<sub>Pickup Mul</sub></span>
+    </div>
+
+    <p>When the fault current equals or exceeds this DT pickup, the relay uses the shorter of the two times:</p>
+
+    <div class="formula-box">
+      <span class="var">t<sub>effective</sub></span> = min(<span class="var">t<sub>IDMT</sub></span>, <span class="var">t<sub>DT</sub></span>)
+    </div>
+
+    <p>Where t<sub>DT</sub> is the user-configured DT delay (0 to 1 second). A delay of 0 seconds represents an instantaneous trip. The DT element appears as a horizontal line on the log-log chart, intersecting the IDMT curve at the crossover current.</p>
+
+    <p>The DT pickup multiplier ranges from 1 to 50 times the CT primary. This high threshold ensures the DT element only operates for severe close-up faults and does not interfere with the IDMT grading for lower-magnitude through-faults.</p>
+
+    <!-- ============================================================ -->
+    <h2>Coordination Time Interval (CTI)</h2>
+
+    <p>The coordination time interval measures the time gap between a primary (faster) relay and its backup relay at the same fault current level:</p>
+
+    <div class="formula-box">
+      <span class="var">CTI</span> = <span class="var">t<sub>backup</sub></span> - <span class="var">t<sub>primary</sub></span>
+    </div>
+
+    <p>Adequate CTI ensures that the primary relay clears the fault before the backup relay trips. If the primary relay fails to operate, the backup relay will still trip after the CTI margin.</p>
+
+    <h3>Industry Standards</h3>
+
+    <p>The accepted minimum CTI depends on relay technology and circuit breaker operating time, but common industry practice is:</p>
+
+    <ul>
+      <li><strong>0.3 to 0.4 seconds</strong> &mdash; Standard minimum margin for numerical relays with modern circuit breakers</li>
+      <li><strong>0.4 to 0.5 seconds</strong> &mdash; More conservative margin sometimes used with electromechanical relays</li>
+    </ul>
+
+    <h3>Color Coding in the Simulator</h3>
+
+    <p>The simulator displays CTI values between adjacent relay pairs with color-coded indicators:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>CTI Value</th>
+          <th>Color</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>&ge; 0.3 s</td>
+          <td>Green</td>
+          <td>Adequate coordination margin. The relay pair is properly graded.</td>
+        </tr>
+        <tr>
+          <td>0.2 &ndash; 0.3 s</td>
+          <td>Yellow</td>
+          <td>Marginal coordination. May be acceptable in some cases but warrants review.</td>
+        </tr>
+        <tr>
+          <td>&lt; 0.2 s</td>
+          <td>Red</td>
+          <td>Insufficient coordination. Risk of both relays tripping simultaneously (sympathetic tripping).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>CTI brackets are also drawn on the log-log chart between relay curves at the current fault level, giving a visual representation of the grading margin.</p>
+
+    <div class="note-box info">
+      <strong>Note:</strong> CTI is computed at each fault level. A relay pair that has adequate CTI at 100% fault may have marginal CTI at lower fault levels where the curves converge. Always check coordination across the full fault range using the fault percentage slider.
+    </div>
+
+    <!-- ============================================================ -->
+    <div class="page-nav">
+      <a href="/docs/getting-started.html">
+        <div class="page-nav-label">Previous</div>
+        <div class="page-nav-title">Getting Started</div>
+      </a>
+      <a href="/docs/relay-settings.html" class="next">
+        <div class="page-nav-label">Next</div>
+        <div class="page-nav-title">Relay Settings</div>
+      </a>
+    </div>
+
+    <div class="docs-footer">
+      <p><a href="/docs/">All Documentation</a> &middot; <a href="/">Back to Simulator</a></p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>

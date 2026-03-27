@@ -34,10 +34,14 @@ The codebase is modular ES modules built with Vite.
 ### File structure
 
 ```
-index.html              # Entry point HTML (Vite root)
-vite.config.js          # Vite config (build to dist/)
+index.html              # Simulator entry point (Vite root)
+vite.config.js          # Vite config (multi-page build to dist/)
+docs/                   # Documentation pages (8 HTML files)
+blog/                   # Blog posts (5 HTML files)
 src/
   main.js               # Entry point — init, event wiring, refresh loop
+  docs-nav.js            # Self-contained site nav bar (injects CSS + HTML)
+  docs.css               # Docs/blog page styles (prose, sidebar, cards)
   constants.js           # Colors, defaults, IEC/IEEE constants, chart params, utilities
   math.js                # Pure math: calcFaultCurrent, tripTime, getIset, fault derivation
   state.js               # Mutable state object, localStorage save/load/reset

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Side-by-side comparison of IEC 60255 and IEEE C37.112 overcurrent relay curve standards. Understand the beta parameter, curve constants, regional usage, and practical coordination impact.">
+<meta name="keywords" content="IEC 60255 vs IEEE C37.112, overcurrent relay standards, IDMT curves, relay curve comparison, beta parameter">
+<meta name="theme-color" content="#0a0e17">
+<meta property="og:title" content="IEC 60255 vs IEEE C37.112: Comparing Relay Curve Standards — IDMT Relay Simulator">
+<meta property="og:description" content="A detailed comparison of the two major overcurrent relay curve standards, their mathematical differences, regional usage, and practical impact on coordination studies.">
+<meta property="og:url" content="https://power-system-tool.vercel.app/blog/iec-60255-vs-ieee-c37112.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://power-system-tool.vercel.app/blog/iec-60255-vs-ieee-c37112.html">
+<title>IEC 60255 vs IEEE C37.112: Comparing Relay Curve Standards — IDMT Relay Simulator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/docs.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "IEC 60255 vs IEEE C37.112: Comparing Relay Curve Standards",
+  "description": "A detailed comparison of the two major overcurrent relay curve standards, their mathematical differences, regional usage, and practical impact on coordination studies.",
+  "datePublished": "2026-03-27",
+  "url": "https://power-system-tool.vercel.app/blog/iec-60255-vs-ieee-c37112.html",
+  "author": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "IDMT Relay Simulator"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://power-system-tool.vercel.app/blog/iec-60255-vs-ieee-c37112.html"
+  }
+}
+</script>
+</head>
+<body>
+<div class="noise"></div>
+
+<div class="blog-layout prose">
+  <div class="blog-header">
+    <time datetime="2026-03-27">March 27, 2026</time>
+    <h1>IEC 60255 vs IEEE C37.112: Comparing Relay Curve Standards</h1>
+    <p class="blog-subtitle">Two standards define the overcurrent relay curves used worldwide. Here is how they differ, where each applies, and what it means for your coordination study.</p>
+  </div>
+
+  <h2>Two Standards, One Purpose</h2>
+
+  <p>Both IEC 60255 and IEEE C37.112 define standardised time-current characteristics for inverse definite minimum time (IDMT) overcurrent relays. They serve the same purpose: providing a mathematical relationship between fault current magnitude and relay operating time so that relay manufacturers, protection engineers, and testing laboratories all work from a common baseline.</p>
+
+  <p>The standards emerged from different traditions. IEC 60255 grew from the British Standard BS 142 and its electromechanical relay heritage. It is maintained by the International Electrotechnical Commission and is the dominant standard outside North America. IEEE C37.112 was developed by the Institute of Electrical and Electronics Engineers for the North American market, where utilities and relay manufacturers had established their own family of curve shapes based on different design principles.</p>
+
+  <p>Despite their different origins, both standards define the same kind of mathematical model: a parametric equation where constants determine the curve shape and a time multiplier setting (called TMS in IEC or time dial in IEEE) scales the operating time. Modern numerical relays from any manufacturer typically support both families of curves, so the choice of standard is driven by local utility practice, regulatory requirements, and engineering preference rather than hardware limitations.</p>
+
+  <h2>The Key Difference -- The Beta Parameter</h2>
+
+  <p>The mathematical distinction between the two standards is small but significant. The general trip time equation is:</p>
+
+  <div class="formula-box">
+    <span class="var">t</span> = ( <span class="const">k</span> / ( <span class="var">M</span><sup>alpha</sup> - 1 ) + <span class="var">beta</span> ) x <span class="var">TMS</span>
+  </div>
+
+  <p>For all four <strong>IEC 60255</strong> curve types, the beta parameter is zero. The equation simplifies to:</p>
+
+  <div class="formula-box">
+    <span class="var">t</span> = <span class="const">k</span> / ( <span class="var">M</span><sup>alpha</sup> - 1 ) x <span class="var">TMS</span>
+  </div>
+
+  <p>For all three <strong>IEEE C37.112</strong> curve types, beta is a positive constant. This means the IEEE equation has an additive time offset inside the parentheses before the TMS multiplication:</p>
+
+  <div class="formula-box">
+    <span class="var">t</span> = ( <span class="const">k</span> / ( <span class="var">M</span><sup>alpha</sup> - 1 ) + <span class="var">beta</span> ) x <span class="var">TMS</span>
+  </div>
+
+  <p>What does beta actually do? At low current multiples (M just above 1), the k/(M^alpha - 1) term dominates and beta is negligible. At high current multiples, the k/(M^alpha - 1) term shrinks toward zero but beta remains. The result is that IEEE curves approach a <strong>non-zero minimum time</strong> equal to beta x TMS, while IEC curves approach zero asymptotically.</p>
+
+  <p>In practical terms, IEEE curves have a built-in time floor. No matter how large the fault current, the relay will never trip faster than beta x TMS seconds. IEC curves have no such floor (the minimum time approaches zero as current approaches infinity, though in practice it reaches the relay's hardware-limited minimum operating time).</p>
+
+  <h2>Side-by-Side Comparison</h2>
+
+  <p>The following table lists all seven standard curve types with their defining constants:</p>
+
+  <table>
+    <tr>
+      <th>Standard</th>
+      <th>Curve Type</th>
+      <th>k</th>
+      <th>alpha</th>
+      <th>beta</th>
+    </tr>
+    <tr>
+      <td>IEC 60255</td>
+      <td>Standard Inverse (SI)</td>
+      <td>0.14</td>
+      <td>0.02</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>IEC 60255</td>
+      <td>Very Inverse (VI)</td>
+      <td>13.5</td>
+      <td>1.0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>IEC 60255</td>
+      <td>Extremely Inverse (EI)</td>
+      <td>80.0</td>
+      <td>2.0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>IEC 60255</td>
+      <td>Long Time Inverse (LTI)</td>
+      <td>120.0</td>
+      <td>1.0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>IEEE C37.112</td>
+      <td>Moderately Inverse (MI)</td>
+      <td>0.0515</td>
+      <td>0.02</td>
+      <td>0.114</td>
+    </tr>
+    <tr>
+      <td>IEEE C37.112</td>
+      <td>Very Inverse (VI)</td>
+      <td>19.61</td>
+      <td>2.0</td>
+      <td>0.491</td>
+    </tr>
+    <tr>
+      <td>IEEE C37.112</td>
+      <td>Extremely Inverse (EI)</td>
+      <td>28.2</td>
+      <td>2.0</td>
+      <td>0.1217</td>
+    </tr>
+  </table>
+
+  <p>Notice the pattern: the IEC curves span a wide range of alpha values (0.02 to 2.0) with no beta, while the IEEE curves all include a non-zero beta. The IEEE Moderately Inverse has the same alpha (0.02) as IEC Standard Inverse but a much smaller k (0.0515 vs 0.14) plus a beta of 0.114, producing a noticeably different curve shape despite the superficially similar parameters.</p>
+
+  <h2>When to Use Which Standard</h2>
+
+  <p>The choice of standard is rarely a purely technical decision. It is driven primarily by geography, utility standards, and regulatory framework:</p>
+
+  <ul>
+    <li><strong>IEC 60255</strong> is the standard in Europe, the United Kingdom, Africa, the Middle East, Asia-Pacific, and most of South America. National utilities in these regions specify IEC curves in their protection guidelines, and relay type-test certificates reference IEC 60255 compliance.</li>
+    <li><strong>IEEE C37.112</strong> is the standard in the United States, Canada, and parts of Central and South America. North American utilities, independent power producers, and industrial facilities specify IEEE curves in their protection philosophy documents.</li>
+  </ul>
+
+  <p>When a project involves an international contractor working in a different region, or when a relay manufacturer supplies globally, both curve families may appear in the same study. This is not a problem -- modern relays support both -- but the protection engineer must be consistent within each relay and document which standard each relay uses.</p>
+
+  <p>In the absence of a utility mandate, the choice comes down to preference and application. IEC curves are simpler (no beta term) and are the global default. IEEE curves may be preferred when the engineer specifically wants the floor-time behaviour that beta provides, which prevents unrealistically fast trip times at very high fault currents.</p>
+
+  <h2>Practical Impact on Coordination</h2>
+
+  <p>For most coordination studies, the difference between IEC and IEEE curves of similar inverse degree is modest. The curves overlap at moderate current multiples (M between 2 and 10) and diverge primarily at the extremes.</p>
+
+  <p>Consider a numeric example at TMS = 1.0, comparing the IEC Standard Inverse curve with the IEEE Moderately Inverse curve:</p>
+
+  <table>
+    <tr>
+      <th>Current Multiple (M)</th>
+      <th>IEC SI Trip Time (s)</th>
+      <th>IEEE MI Trip Time (s)</th>
+      <th>Difference (s)</th>
+    </tr>
+    <tr>
+      <td>1.5</td>
+      <td>17.06</td>
+      <td>6.39</td>
+      <td>-10.67</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>10.02</td>
+      <td>3.82</td>
+      <td>-6.20</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>4.30</td>
+      <td>1.72</td>
+      <td>-2.58</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>3.02</td>
+      <td>1.23</td>
+      <td>-1.79</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>2.23</td>
+      <td>0.94</td>
+      <td>-1.29</td>
+    </tr>
+    <tr>
+      <td>50</td>
+      <td>1.52</td>
+      <td>0.77</td>
+      <td>-0.75</td>
+    </tr>
+  </table>
+
+  <p>At low multiples near pickup, the IEC SI curve is significantly slower than the IEEE MI curve, primarily because IEC SI has a larger k value relative to its alpha. At high multiples, the IEEE curve approaches its beta floor (0.114 s at TMS = 1.0) while the IEC curve continues to decline. For very high multiples (M greater than 50), the IEC curve eventually becomes faster than the IEEE curve's floor time.</p>
+
+  <p>The practical takeaway: if you are coordinating relays using the same standard (all IEC or all IEEE), the differences are handled naturally by TMS adjustment. If you are mixing standards within a single coordination scheme -- for example, an IEEE relay downstream and an IEC relay upstream -- you must check the CTI margin carefully at both extremes of the fault range, because the different curve shapes may cause unexpected convergence or divergence.</p>
+
+  <h2>Try Both in the Simulator</h2>
+
+  <p>The fastest way to see the difference between IEC and IEEE curves is to plot them side by side. The simulator lets you assign different curve types to different relays, so you can compare an IEC Standard Inverse relay with an IEEE Moderately Inverse relay on the same TCC chart and immediately see where they diverge.</p>
+
+  <a href="/" class="sim-link">
+    <span class="sim-link-icon">[Sim]</span>
+    <span class="sim-link-text">
+      <strong>Compare IEC and IEEE curves in the simulator</strong>
+      <small>Set two relays with different standards and see the curves overlaid on one chart</small>
+    </span>
+    <span class="sim-link-arrow">-></span>
+  </a>
+
+  <h2>Conclusion</h2>
+
+  <p>IEC 60255 and IEEE C37.112 are more alike than they are different. Both define inverse time characteristics for overcurrent relays using the same parametric equation structure. The key distinction is the beta parameter: IEC sets it to zero, IEEE gives it a positive value that creates a minimum operating time floor.</p>
+
+  <p>In practice, the choice of standard is determined by geography and utility requirements rather than technical superiority. Both families of curves can be used to achieve effective coordination. The important thing is consistency within a study, careful attention to the CTI margin across the full fault range, and clear documentation of which standard each relay uses.</p>
+
+  <p>When in doubt, use the curve family specified by the local utility. When no specification exists, IEC Standard Inverse is the safe default for general protection applications, while IEEE curves may be preferred in North American installations or when the floor-time behaviour is specifically desirable.</p>
+
+  <div class="docs-footer">
+    <p><a href="/blog/">Back to Blog</a></p>
+  </div>
+</div>
+
+<script type="module" src="/src/docs-nav.js"></script>
+</body>
+</html>
